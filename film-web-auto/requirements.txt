@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+playwright
+pydantic
+python-multipart
+pydantic_settings
+aiohttp
+sqlalchemy[asyncio]
+asyncpg
+pyyaml
+cent
+mcp[sse]
+sse-starlette
+playwright-stealth

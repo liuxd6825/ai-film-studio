@@ -1,0 +1,7 @@
+**/__pycache__/
+
+/dist/
+/ms-playwright/
+/build/
+/docs/
+/cache/

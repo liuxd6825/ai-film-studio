@@ -1,0 +1,24 @@
+from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy.sql import func
+from database.connection import Base
+
+
+class ClientRequest(Base):
+    __tablename__ = "client_requests"
+    
+    id = Column(String(256), primary_key=True)
+    workspace = Column(String(64), nullable=True, index=True)
+    status = Column(String(32), nullable=True, index=True)
+    desc = Column(String(512), nullable=True)
+    system = Column(String(128), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "workspace": self.workspace,
+            "status": self.status,
+            "desc": self.desc,
+            "system": self.system,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }

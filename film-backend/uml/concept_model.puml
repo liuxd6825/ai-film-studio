@@ -1,0 +1,112 @@
+@startuml
+
+
+class 视觉物 {
+   +ID: String
+   +OrgID: string
+   +项目ID: string
+   +名称: String
+   +描述: Text
+   +种类: 枚举<场景|角色|道具>
+   +类型: 枚举<主演|配角|群众|动物|怪物|机器|其他>|<内景|外景|混合场景>
+   +状态: 枚举<草稿|已批准|已修订>
+}
+
+class 视觉图 {
+    +ID: String
+    +OrgID: string
+    +项目ID: string
+    +名称: String
+    +描述: Text
+}
+
+class 生图会话{
+    +ID: String
+    +OrgID: string
+    +项目ID: string
+    +名称: String
+}
+
+class 角色 {
+    +ID: String
+    +OrgID: string
+    +项目ID: string
+    +类型: 枚举<主演|配角|群众|动物|怪物|机器|其他>
+}
+
+class 场景 {
+    +ID: String
+    +OrgID: string
+    +项目ID: string
+    +类型: 枚举<内景|外景|混合场景>
+}
+
+class 道具{
+    +ID: String
+    +OrgID: string
+    +项目ID: string
+    +类型: String
+}
+
+class 故事页 {
+   +ID: String
+   +OrgID: string
+   +项目ID: string
+   +标题: String
+   +描述: Text
+   +顺序号: Integer
+   +状态: 枚举<草稿|进行中|已完成>
+   +创建时间: DateTime
+   +更新时间: DateTime
+  --
+   +剧情时间: 枚举<日|夜|黎明|黄昏|晨|午|午夜|凌晨等>
+   +天气: 枚举<晴|雨|雪|雾|风|阴|雷暴|多云等>
+}
+
+
+
+class 镜头{
+   +ID: String
+   +剧本内容: String
+   +剧情时间: 枚举<日|夜|黎明|黄昏|晨|午|午夜|凌晨等>
+   +天气: 枚举<晴|雨|雪|雾|风|阴|雷暴|多云等>
+   +角色: []角色
+   +场景: []场景
+   +道具: []道具
+}
+
+class 关键帧 {
+   +ID: String
+   +帧号: Integer
+   +图片地址: String
+   +缩略图地址: String
+
+   +画面描述: Text
+   +动作描述: Text
+   +角色台词: Text
+   +角色台词: Text
+
+
+   +顺序号: Integer
+   +机位类型: 枚举<全景|中景|近景|特写|过肩|主观镜头等>
+   +相机设置: String
+   +相机角度: 枚举<平视|俯拍|仰拍|鸟瞰|虫视>
+   +相机运动: 枚举<固定|摇镜|倾斜|推轨|跟踪|斯坦尼康|手持等>
+
+   +时长: Duration
+   +音效说明: Text
+}
+
+视觉物 <|-- 角色
+视觉物 <|-- 道具
+视觉物 <|-- 场景
+视觉物 "1" -- "0..n" 视觉图
+
+故事页 "1" -- "0..n" 镜头
+镜头 "1" -- "0..n" 关键帧
+
+
+关键帧 "1" --  "1" 生图会话
+视觉物 "1" --  "1" 生图会话
+镜头 "1" --  "0" 生图会话
+@enduml

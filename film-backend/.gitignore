@@ -1,0 +1,13 @@
+/web/dist/
+/web/node_modules/
+/server
+/guide/src-crush-0.51.2/
+/guide/film-web/
+/logs/
+*/*/*.log.worktrees
+/guide/storyboard-ui/
+/server.log
+/server.pid
+/backend.log
+/guide/
+/docs/
