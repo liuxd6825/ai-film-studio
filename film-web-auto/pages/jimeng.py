@@ -552,3 +552,14 @@ class JimengPage(BasePage):
                 print(f"[JimengPage] set_seed: 未找到 seed={seed} 的选项")
         else:
             print(f"[JimengPage] set_seed: 未找到 seed 选择器")
+
+    async def close_dialog(self):
+        for _ in range(5):
+            dialog = self.page.locator("div[role='dialog'][aria-modal='true']")
+            if await dialog.count() > 0:
+                close_btn = dialog.locator("div[class^='close-icon-wrapper-']")
+                if await close_btn.count() > 0:
+                    await close_btn.first.click(force=True)
+                    await self.page.wait_for_timeout(300)
+                return
+            await self.page.wait_for_timeout(1000)

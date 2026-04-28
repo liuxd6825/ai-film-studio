@@ -59,7 +59,7 @@ class ScannerService:
                     await browser_manager.close_page(page)
                 system = key.split(":")[0]
                 workspace = key.split(":")[1]
-                page = await browser_manager.new_page(system=system)
+                page = await browser_manager.new_page(system=system, headless= settings.BROWSER_HEADLESS)
 
                 if system == "jimeng":
                     await self._process_jimeng(page, workspace, workspace_tasks)
