@@ -71,8 +71,20 @@ class GeminiDownload:
     @classmethod
     async def process_task(cls, page, task, task_service, session, scroll_distance: int = DEFAULT_SCROLL_DISTANCE):
 
-        # selector = f"#{task.id} model-response button[data-test-id='download-generated-image-button']"
-        # button_el = page.locator(selector)
+        selector = f"#model-response-message-contentr_{task.id} > p[data-path-to-node='0'] > div"
+        download_btns = page.locator(selector)
+        download_btn_count = await download_btns.count()
+        if download_btn_count == 0:
+            selector = f"#model-response-message-contentr_{task.id} > p[data-path-to-node='0']"
+            message_p = page.locator(selector)
+            message_p_count = await message_p.count()
+            if message_p_count == 1:
+                text = await page.evaluate("""(sel) => document.querySelector(sel)?.innerText || ''""", selector)
+                await task_service.update_task_status(task.id, "failed", text or "图片生成出错")
+                return
+            else:
+                await task_service.update_task_status(task.id, "failed", "图片生成出错")
+                return
 
         # for fail_text in FAIL_TEXTS:
         #     if fail_text in text:
