@@ -31,6 +31,7 @@ func (s *Service) ListByWorkMode(workMode WorkMode) []AIModel {
 	case WorkModeTextToVideo:
 		return []AIModel{
 			{ID: "seedance_2.0_fast_web", Title: "WEB SD2.0-Fast", Provider: "jimeng"},
+			{ID: "seedance_2.0_fast_web_vip", Title: "WEB SD2.0-Fast-Vip", Provider: "jimeng"},
 		}
 	default:
 		return []AIModel{

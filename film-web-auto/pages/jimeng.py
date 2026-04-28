@@ -459,7 +459,7 @@ class JimengPage(BasePage):
         
         target_div = self.page.locator("div[data-id][data-index='0']")
         waiting_texts = ["智能创意中", "造梦中", "排队加速中", "排队中"]
-        invalid_texts = ["图片不符合平台规则", "素材中包含人脸信息", "网络不顺畅", "服务器拥挤"]
+        invalid_texts = ["图片不符合平台规则", "素材中包含人脸信息", "网络不顺畅", "服务器拥挤","处于使用高峰期"]
         
         elapsed = 0
         interval = 1
