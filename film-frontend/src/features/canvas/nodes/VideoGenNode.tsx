@@ -204,7 +204,6 @@ export const VideoGenNode = memo(function VideoGenNode({
   }, []);
 
   useEffect(() => {
-    debugger
     const taskId = data.taskId;
     if (
       taskId &&
@@ -243,7 +242,7 @@ export const VideoGenNode = memo(function VideoGenNode({
           startPolling(taskId);
         });
     }
-  }, []);
+  }, [data.taskId, data.taskStatus, data.taskProgress, projectId, id, updateNodeData]);
 
   const incomingImages: IncomingImage[] = useMemo(() => {
     const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
@@ -393,7 +392,54 @@ export const VideoGenNode = memo(function VideoGenNode({
     [projectId, id, updateNodeData],
   );
 
+  useEffect(() => {
+    const taskId = data.taskId;
+    if (
+      taskId &&
+      (data.taskStatus === "pending" || data.taskStatus === "processing")
+    ) {
+      setTaskStatus(data.taskStatus);
+      setTaskProgress(data.taskProgress || 0);
+      setIsGenerating(true);
+
+      canvasTaskApi
+        .poll(projectId || "default", taskId)
+        .then((result) => {
+          setTaskStatus(result.statusText);
+          setTaskProgress(result.progress);
+
+          if (result.statusText === "completed") {
+            updateNodeData(id, {
+              videoUrl: result.resultUrl,
+              previewVideoUrl: result.resultUrl,
+              taskStatus: "completed",
+              taskProgress: 100,
+            });
+            setIsGenerating(false);
+          } else if (result.statusText === "failed") {
+            updateNodeData(id, {
+              taskStatus: "failed",
+              errorMessage: result.errorMessage,
+            });
+            setIsGenerating(false);
+          } else {
+            startPolling(taskId);
+          }
+        })
+        .catch((err) => {
+          console.error("Resume poll error:", err);
+          startPolling(taskId);
+        });
+    }
+  }, [data.taskId, data.taskStatus, data.taskProgress, projectId, id, updateNodeData, startPolling]);
+
   const handleGenerate = useCallback(async () => {
+    debugger
+    if (!projectId) {
+      setError("项目ID无效，请刷新页面重试");
+      return;
+    }
+
     if (!data.prompt?.trim()) {
       setError("请输入提示词");
       return;
@@ -429,17 +475,17 @@ export const VideoGenNode = memo(function VideoGenNode({
         projectId,
         canvasId,
         nodeId: id,
-        hasRequestId: !!response.taskId,
-        requestId: response.taskId,
+        hasRequestId: !!response.task_id,
+        requestId: response.task_id,
       });
 
-      if (response.taskId) {
+      if (response.task_id) {
         setTaskStatus("processing");
         updateNodeData(id, {
-          taskId: response.taskId,
+          taskId: response.task_id,
           taskStatus: "processing",
         });
-        startPolling(response.taskId);
+        startPolling(response.task_id);
       } else if (response.result_url) {
         updateNodeData(id, {
           videoUrl: response.result_url,
@@ -448,7 +494,7 @@ export const VideoGenNode = memo(function VideoGenNode({
 
         const createdNodeId = addDerivedExportNode(
           id,
-          response.taskId,
+          response.task_id,
           data.aspectRatio,
           response.result_url,
           {

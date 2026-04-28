@@ -72,7 +72,7 @@ export interface GenerateVideoRequest {
 }
 
 export interface GenerateVideoResponse {
-  taskId: string;
+  task_id: string;
   result_id: string;
   result_url: string;
   status: string;

@@ -87,7 +87,7 @@ func (h *AIVideoHandler) Generate(ctx iris.Context) {
 			aiResp.ResultId,
 			aiResp.ResultUrl,
 			"video_generation",
-			model,
+			"jimeng",
 			model,
 			req.Prompt,
 			map[string]interface{}{
