@@ -46,6 +46,8 @@ class VideoGenerationService(BaseService):
 
             await jimeng.navigate()
 
+            await jimeng.close_dialog()
+
             await jimeng.select_generation_mode("视频生成")
             await jimeng.select_reference_type(work_type)
             await jimeng.select_model_v2(model)

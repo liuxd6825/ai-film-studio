@@ -47,6 +47,8 @@ class ImageGenerationService(BaseService):
 
             await jimeng.navigate()
 
+            await jimeng.close_dialog()
+
             await jimeng.select_generation_mode("图片生成")
             await jimeng.select_model(model)
 

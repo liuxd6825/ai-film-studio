@@ -7,11 +7,11 @@ app:
     gemini: "https://gemini.google.com/app"
 
 browser:
-  headless: false
+  headless: true
   timeout: 30000
   channel: "chrome"
-  width: 1920
-  height: 1080
+  width: 1440
+  height: 768
 
 task:
   timeout: 180000
@@ -24,7 +24,7 @@ storage:
 
 database:
   # url: "postgresql+asyncpg://postgres:123456@localhost:5432/jimeng"
-  url: "postgresql+asyncpg://postgres:secret@127.0.0.1:5432/jimeng"
+  url: "postgresql+asyncpg://postgres:123456@192.168.120.224:5432/jimeng"
   pool_size: 10
   max_overflow: 20
 

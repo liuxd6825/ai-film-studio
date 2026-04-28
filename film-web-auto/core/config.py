@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     BROWSER_HEADLESS: bool = False
     BROWSER_TIMEOUT: int = 30000
     BROWSER_CHANNEL: str = "chrome"
-    BROWSER_WIDTH: int = 1920
-    BROWSER_HEIGHT: int = 1080
+    BROWSER_WIDTH: int = 1440
+    BROWSER_HEIGHT: int = 768
     TASK_TIMEOUT: int = 120000
     PROFILE_DIR: str = os.path.join(os.path.dirname(__file__), "..", "cache", "profiles")
     IMAGE_CACHE_DIR: str = os.path.join(os.path.dirname(__file__), "..", "cache", "images")

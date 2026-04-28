@@ -63,7 +63,7 @@ class JimengDownload:
                     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
                     await download.save_as(filepath)
                     file_names.append(filename)
-                    file_url = f"{settings.DOWNLOAD_URL_PREFIX}/downloads/{task.workspace}/{filename}"
+                    file_url = f"{settings.DOWNLOAD_URL_PREFIX}/downloads/{task.system}/{task.workspace}/{filename}"
 
                     download_urls.append(file_url)
                     print(f"[JimengDownload] Downloaded: {file_url}")
