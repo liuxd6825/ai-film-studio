@@ -110,10 +110,10 @@ interface IncomingImage {
 }
 
 export const VideoGenNode = memo(function VideoGenNode({
-  id,
-  data,
-  selected,
-}: NodeProps & { data: VideoGenNodeData }) {
+                                                         id,
+                                                         data,
+                                                         selected,
+                                                       }: NodeProps & { data: VideoGenNodeData }) {
   const { canvasId } = useParams<{ canvasId: string }>();
   const projectId = useCanvasStore((s) => s.projectId);
   const nodes = useCanvasStore((s) => s.nodes);
@@ -734,7 +734,7 @@ export const VideoGenNode = memo(function VideoGenNode({
           )}
         </div>
 
-      {showFloatingPanel && (
+        {showFloatingPanel && (
           <div
             ref={panelRef}
             className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[600px] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl z-50"
