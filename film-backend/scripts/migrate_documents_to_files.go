@@ -4,13 +4,13 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"open-film-service/internal/model"
 )
 
 func main() {
-	db, err := gorm.Open(sqlite.Open("sqlite.db"), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open("host=192.168.120.224 user=postgres password=123456 dbname=ai-film-studio port=5432 sslmode=disable"), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}

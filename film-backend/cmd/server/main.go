@@ -13,7 +13,7 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"github.com/google/uuid"
 	"github.com/kataras/iris/v12"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"open-film-service/internal/config"
@@ -80,16 +80,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 使用绝对路径确保数据库位置唯一
-	dbPath := cfg.DB.DSN
-	if !filepath.IsAbs(dbPath) {
-		cwd, _ := os.Getwd()
-		dbPath = filepath.Join(cwd, dbPath)
-	}
 	logging.Info("Config loaded from: ", os.Getenv("CONFIG_PATH"))
-	logging.Info("Connecting to database at: ", dbPath)
+	logging.Info("Connecting to database at: ", cfg.DB.DSN)
 
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(cfg.DB.DSN), &gorm.Config{})
 	if err != nil {
 		logging.Fatal("failed to connect to database: ", err)
 	}

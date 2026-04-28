@@ -85,10 +85,7 @@ const (
 var ErrMissingAPIKey = errors.New("API key is required for provider")
 
 func Load() (*Config, error) {
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		configPath = "config.yaml"
-	}
+	configPath := "configs/config.yaml"
 
 	cfg := &Config{}
 
@@ -97,6 +94,8 @@ func Load() (*Config, error) {
 		if err := yaml.Unmarshal(data, cfg); err != nil {
 			panic(err)
 		}
+	} else {
+		panic(err)
 	}
 
 	if err := cfg.validate(); err != nil {

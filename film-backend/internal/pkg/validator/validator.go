@@ -2,6 +2,7 @@ package validator
 
 import (
 	"fmt"
+	"open-film-service/internal/logging"
 	"reflect"
 	"strings"
 
@@ -245,6 +246,7 @@ func InternalServerError(ctx iris.Context, err error) bool {
 	}
 	ctx.StatusCode(500)
 	ctx.JSON(buildErrorResponse(500, "internal server error", err))
+	logging.Error(err)
 	return true
 }
 

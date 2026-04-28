@@ -8,15 +8,16 @@ from core.config import settings
 
 
 def get_screen_size():
-    try:
-        user32 = ctypes.windll.user32
-        width = user32.GetSystemMetrics(0)
-        height = user32.GetSystemMetrics(1)
-        if width < 1024 or height < 768:
-            return 1920, 1080
-        return width - 100, height - 150
-    except Exception:
-        return 1920, 1080
+    return 1024, 1024
+    # try:
+    #     user32 = ctypes.windll.user32
+    #     width = user32.GetSystemMetrics(0)
+    #     height = user32.GetSystemMetrics(1)
+    #     if width < 1024 or height < 768:
+    #         return 1024, 768
+    #     return width - 100, height - 150
+    # except Exception:
+    #     return 1024, 768
 
 
 def get_storage_state_path(system: str) -> str:
