@@ -14,22 +14,26 @@ browser:
   height: 1080
 
 task:
-  timeout: 180000
+  timeout: 120000
 
 storage:
   profile_dir: "cache/profiles"
   image_cache_dir: "cache/images"
   download_cache_dir: "cache/downloads"
-  download_url_prefix: "http://localhost:18001"
+  download_url_prefix: "http://localhost:8000"
+
 
 database:
-  # url: "postgresql+asyncpg://postgres:123456@localhost:5432/jimeng"
+  # url: "postgresql+asyncpg://postgres:123456@192.168.120.224:5432/jimeng"
   url: "postgresql+asyncpg://postgres:secret@127.0.0.1:5432/jimeng"
   pool_size: 10
   max_overflow: 20
+
+
 
 scanner:
   enabled: true
   interval: 60
   wait_time: 10
   retry_limit: 3
+
