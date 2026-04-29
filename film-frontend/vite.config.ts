@@ -17,6 +17,10 @@ export default defineConfig({
         target: 'http://localhost:17781',
         changeOrigin: true,
       },
+      '/downloads': {
+        target: 'http://localhost:18001',
+        changeOrigin: true,
+      },
     },
     middleware: [
       history(),

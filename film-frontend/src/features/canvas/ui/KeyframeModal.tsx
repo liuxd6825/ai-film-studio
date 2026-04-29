@@ -27,7 +27,7 @@ async function extractFrame(
 ): Promise<{ imageUrl: string; width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
-    video.src = videoUrl;
+    video.src = replaceBaseUrl(videoUrl);
     video.muted = true;
     video.preload = "auto";
 
@@ -51,6 +51,14 @@ async function extractFrame(
     video.onerror = () => reject(new Error("Failed to load video"));
     video.currentTime = timestamp;
   });
+}
+
+function replaceBaseUrl(s: string) {
+  if(!s) {
+    return ""
+  }
+  const sBaseUrl = s.substring(0, s.indexOf('/', 7));
+  return s.replace(sBaseUrl, window.location.origin)
 }
 
 export function KeyframeModal({
