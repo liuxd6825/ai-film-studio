@@ -24,6 +24,7 @@ import {
 import { nodeTypes } from "./nodes";
 import { NodeSelectionMenu } from "./NodeSelectionMenu";
 import { ImageViewerModal } from "./ui/ImageViewerModal";
+import { VideoViewerModal } from "./ui/VideoViewerModal";
 import { KeyframePanel } from "./components/KeyframePanel";
 import { useProjectStore } from "../../stores/projectStore";
 import { canvasApi } from "../../api/canvasApi";
@@ -636,6 +637,8 @@ export function Canvas() {
       )}
 
       <ImageViewerModal />
+
+      <VideoViewerModal />
 
       <KeyframePanel />
     </div>

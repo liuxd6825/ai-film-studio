@@ -75,6 +75,12 @@ interface CanvasState {
     imageList: string[];
     currentIndex: number;
   };
+  videoViewer: {
+    isOpen: boolean;
+    currentVideoUrl: string | null;
+    videoList: string[];
+    currentIndex: number;
+  };
   isInteractingWithInput: boolean;
   lastAddNodePosition: { x: number; y: number } | null;
   isLocked: boolean;
@@ -173,6 +179,9 @@ interface CanvasState {
   openImageViewer: (imageUrl: string, imageList?: string[]) => void;
   closeImageViewer: () => void;
   navigateImageViewer: (direction: "prev" | "next") => void;
+  openVideoViewer: (videoUrl: string, videoList?: string[]) => void;
+  closeVideoViewer: () => void;
+  navigateVideoViewer: (direction: "prev" | "next") => void;
 
   undo: () => boolean;
   redo: () => boolean;
@@ -586,6 +595,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     imageList: [],
     currentIndex: 0,
   },
+  videoViewer: {
+    isOpen: false,
+    currentVideoUrl: null,
+    videoList: [],
+    currentIndex: 0,
+  },
   isInteractingWithInput: false,
   lastAddNodePosition: null,
   isLocked: false,
@@ -844,6 +859,54 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
           ...state.imageViewer,
           currentIndex: newIndex,
           currentImageUrl: imageList[newIndex],
+        },
+      });
+    }
+  },
+
+  openVideoViewer: (videoUrl: string, videoList?: string[]) => {
+    const list = videoList && videoList.length > 0 ? videoList : [videoUrl];
+    const index = list.indexOf(videoUrl);
+    set({
+      videoViewer: {
+        isOpen: true,
+        currentVideoUrl: videoUrl,
+        videoList: list,
+        currentIndex: index >= 0 ? index : 0,
+      },
+    });
+  },
+
+  closeVideoViewer: () => {
+    set({
+      videoViewer: {
+        isOpen: false,
+        currentVideoUrl: null,
+        videoList: [],
+        currentIndex: 0,
+      },
+    });
+  },
+
+  navigateVideoViewer: (direction) => {
+    const state = get();
+    const { currentIndex, videoList } = state.videoViewer;
+    if (direction === "prev" && currentIndex > 0) {
+      const newIndex = currentIndex - 1;
+      set({
+        videoViewer: {
+          ...state.videoViewer,
+          currentIndex: newIndex,
+          currentVideoUrl: videoList[newIndex],
+        },
+      });
+    } else if (direction === "next" && currentIndex < videoList.length - 1) {
+      const newIndex = currentIndex + 1;
+      set({
+        videoViewer: {
+          ...state.videoViewer,
+          currentIndex: newIndex,
+          currentVideoUrl: videoList[newIndex],
         },
       });
     }

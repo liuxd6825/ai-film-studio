@@ -33,8 +33,26 @@ export interface ImageResult {
   createdAt: number;
 }
 
+export interface VideoResult {
+  resultId: string;
+  taskId: string;
+  url: string;
+  width: number;
+  height: number;
+  duration: number;
+  createdAt: number;
+}
+
 export interface NodeTaskImagesResponse {
   images: ImageResult[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface NodeTaskVideosResponse {
+  videos: VideoResult[];
   totalCount: number;
   page: number;
   pageSize: number;
@@ -173,6 +191,37 @@ export const canvasTaskApi = {
           throw new Error(json.message || "Failed to get node task images count");
         }
         return json.data.count as number;
+      });
+  },
+
+  getNodeTaskVideos: (
+    projectId: string,
+    nodeId: string,
+    page?: number,
+    pageSize?: number,
+  ): Promise<NodeTaskVideosResponse> => {
+    const url = new URL(
+      `${API_BASE_URL}/api/v1/projects/${projectId}/canvas/nodes/${nodeId}/task-videos`,
+    );
+    if (page) {
+      url.searchParams.set("page", String(page));
+    }
+    if (pageSize) {
+      url.searchParams.set("pageSize", String(pageSize));
+    }
+
+    return fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.code !== 0 && json.code !== 200) {
+          throw new Error(json.message || "Failed to get node task videos");
+        }
+        return json.data as NodeTaskVideosResponse;
       });
   },
 };

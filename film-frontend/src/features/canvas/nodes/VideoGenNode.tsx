@@ -15,7 +15,7 @@ import { useCanvasStore } from "../stores/canvasStore";
 import { videoApi, type GenerateVideoRequest } from "../../../api/videoApi";
 import { canvasTaskApi } from "../../../api/canvasTaskApi";
 import { aimodelApi, type AIModel } from "../../../api/aimodelApi";
-import { ImageSelectorModal } from "../ui/ImageSelectorModal";
+import { VideoSelectorModal } from "../ui/VideoSelectorModal";
 import { KeyframeModal } from "../ui/KeyframeModal";
 import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
@@ -122,12 +122,12 @@ export const VideoGenNode = memo(function VideoGenNode({
   const addDerivedExportNode = useCanvasStore((s) => s.addDerivedExportNode);
   const addEdge = useCanvasStore((s) => s.addEdge);
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
-  const openImageViewer = useCanvasStore((s) => s.openImageViewer);
+  const openVideoViewer = useCanvasStore((s) => s.openVideoViewer);
   const addKeyframe = useCanvasStore((s) => s.addKeyframe);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
 
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
-  const [showImageSelector, setShowImageSelector] = useState(false);
+  const [showVideoSelector, setShowVideoSelector] = useState(false);
   const [showKeyframeModal, setShowKeyframeModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,6 +137,7 @@ export const VideoGenNode = memo(function VideoGenNode({
 
   const panelRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const isComposingRef = useRef(false);
@@ -293,9 +294,9 @@ export const VideoGenNode = memo(function VideoGenNode({
 
   const handlePreviewImage = useCallback(
     (imageUrl: string) => {
-      openImageViewer(imageUrl);
+      openVideoViewer(imageUrl);
     },
-    [openImageViewer],
+    [openVideoViewer],
   );
 
   const handleCompositionStart = useCallback(() => {
@@ -599,20 +600,27 @@ export const VideoGenNode = memo(function VideoGenNode({
     setShowFloatingPanel((prev) => !prev);
   }, []);
 
+  const handlePlayVideo = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.play();
+    }
+  }, []);
+
   const handleClosePanel = useCallback(() => {
     setShowFloatingPanel(false);
   }, []);
 
   const handleVideoSelect = useCallback(
-    (imageUrl: string) => {
-      updateNodeData(id, { videoUrl: imageUrl });
-      setShowImageSelector(false);
+    (videoUrl: string) => {
+      updateNodeData(id, { videoUrl, previewVideoUrl: videoUrl });
+      setShowVideoSelector(false);
     },
     [id, updateNodeData],
   );
 
   const handleCloseImageSelector = useCallback(() => {
-    setShowImageSelector(false);
+    setShowVideoSelector(false);
   }, []);
 
   const handleOpenKeyframeModal = useCallback(() => {
@@ -650,7 +658,7 @@ export const VideoGenNode = memo(function VideoGenNode({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setShowImageSelector(true);
+            setShowVideoSelector(true);
           }}
           className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
           title="选择"
@@ -672,7 +680,7 @@ export const VideoGenNode = memo(function VideoGenNode({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            openImageViewer(data.videoUrl!);
+            openVideoViewer(data.videoUrl!);
           }}
           disabled={!data.videoUrl}
           className={`p-1.5 rounded ${data.videoUrl ? "hover:bg-gray-100 dark:hover:bg-gray-700" : "opacity-40 cursor-not-allowed"}`}
@@ -756,17 +764,23 @@ export const VideoGenNode = memo(function VideoGenNode({
         >
           {data.videoUrl ? (
             <div className="h-full relative rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 dark:from-gray-700 to-gray-200 dark:to-gray-600">
-              <img
+              <video
+                ref={videoRef}
                 src={data.previewVideoUrl || data.videoUrl}
-                alt="Generated video preview"
                 className="w-full h-full object-contain"
+                muted
+                preload="auto"
               />
               <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center">
-                <div className="opacity-0 hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  onClick={handlePlayVideo}
+                  className="opacity-0 hover:opacity-100 transition-opacity"
+                >
                   <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
                     <Play className="w-6 h-6 text-white fill-white" />
                   </div>
-                </div>
+                </button>
               </div>
             </div>
           ) : (
@@ -956,11 +970,11 @@ export const VideoGenNode = memo(function VideoGenNode({
           id="source"
           className="w-3 h-3"
         />
-        {showImageSelector && projectId && (
-          <ImageSelectorModal
+        {showVideoSelector && projectId && (
+          <VideoSelectorModal
             projectId={projectId}
             nodeId={id}
-            currentImageUrl={data.videoUrl || null}
+            currentVideoUrl={data.videoUrl || null}
             onSelect={handleVideoSelect}
             onClose={handleCloseImageSelector}
           />
