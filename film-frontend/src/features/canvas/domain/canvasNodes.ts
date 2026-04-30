@@ -8,6 +8,7 @@ export const CANVAS_NODE_TYPES = {
   storyboardGen: "storyboardGenNode",
   videoGen: "videoGenNode",
   videoUpload: "videoUploadNode",
+  text: "textNode",
 } as const;
 
 export type CanvasNodeType =
@@ -212,6 +213,12 @@ export interface VideoGenNodeData extends NodeDisplayData {
   keyframes?: Keyframe[];
 }
 
+export interface TextNodeData extends NodeDisplayData {
+  content: string;
+  prompt: string;
+  aiModel?: string;
+}
+
 export type CanvasNodeData =
   | UploadImageNodeData
   | ExportImageNodeData
@@ -221,7 +228,8 @@ export type CanvasNodeData =
   | StoryboardSplitNodeData
   | StoryboardGenNodeData
   | VideoGenNodeData
-  | VideoUploadNodeData;
+  | VideoUploadNodeData
+  | TextNodeData;
 
 export interface CanvasNode {
   id: string;

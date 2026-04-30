@@ -105,6 +105,7 @@ export function NodeSelectionMenu({
       "node.menu.storyboard": "故事板",
       "node.menu.textAnnotation": "文本标注",
       "node.menu.storyboardGen": "故事板生成",
+      "node.menu.text": "文本",
     };
     return labels[def.menuLabelKey] || def.menuLabelKey;
   };

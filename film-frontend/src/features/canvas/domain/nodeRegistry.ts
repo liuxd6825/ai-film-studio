@@ -13,6 +13,7 @@ import {
   type UploadImageNodeData,
   type VideoGenNodeData,
   type VideoUploadNodeData,
+  type TextNodeData,
 } from "./canvasNodes";
 
 export type MenuIconKey = "upload" | "sparkles" | "layout" | "text";
@@ -53,6 +54,7 @@ const DEFAULT_NODE_DISPLAY_NAME: Record<string, string> = {
   groupNode: "分组",
   storyboardNode: "故事板",
   storyboardGenNode: "故事板生成",
+  textNode: "文本",
 
 };
 
@@ -326,6 +328,31 @@ const videoUploadNodeDefinition: CanvasNodeDefinition<VideoUploadNodeData> = {
   }),
 };
 
+const textNodeDefinition: CanvasNodeDefinition<TextNodeData> = {
+  type: CANVAS_NODE_TYPES.text,
+  menuLabelKey: "node.menu.text",
+  menuIcon: "text",
+  visibleInMenu: true,
+  capabilities: {
+    toolbar: true,
+    promptInput: false,
+  },
+  connectivity: {
+    sourceHandle: true,
+    targetHandle: true,
+    connectMenu: {
+      fromSource: true,
+      fromTarget: true,
+    },
+  },
+  createDefaultData: () => ({
+    displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.text],
+    content: "",
+    prompt: "",
+    aiModel: "veo",
+  }),
+};
+
 export const canvasNodeDefinitions: Record<
   CanvasNodeType,
   CanvasNodeDefinition
@@ -339,6 +366,7 @@ export const canvasNodeDefinitions: Record<
   [CANVAS_NODE_TYPES.group]: groupNodeDefinition,
   [CANVAS_NODE_TYPES.storyboardSplit]: storyboardSplitDefinition,
   [CANVAS_NODE_TYPES.storyboardGen]: storyboardGenNodeDefinition,
+  [CANVAS_NODE_TYPES.text]: textNodeDefinition,
 
 
 };
