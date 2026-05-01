@@ -23,10 +23,18 @@ export interface GenerateImageResponse {
   provider: string;
 }
 
+export interface ImageAiModel {
+  id: string;
+  title: string;
+}
+
 export const imageApi = {
   generate: (projectId: string, data: GenerateImageRequest) =>
     api.post<GenerateImageResponse>(
       `/api/v1/projects/${projectId}/images/generate`,
       data,
     ),
+
+  getModels: (projectId: string): Promise<ImageAiModel[]> =>
+    api.get<ImageAiModel[]>(`/api/v1/projects/${projectId}/images/models`),
 };

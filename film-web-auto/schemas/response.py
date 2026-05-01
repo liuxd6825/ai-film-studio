@@ -13,7 +13,16 @@ class GetResponse(BaseResponse):
 
 
 class Result(BaseModel):
+    taskId : str=""
     code: int = 200
     data: Optional[dict] = None
     message: Optional[str] = None
     success: bool = True
+    status: str=""
+
+class TaskStatusResponse(BaseModel):
+    taskId : str
+    status : str
+    workspace : str
+    desc : str
+    system : str

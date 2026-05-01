@@ -1,5 +1,6 @@
 import { api } from "./client";
 
+
 export interface VideoProject {
   id: string;
   projectId: string;
@@ -91,6 +92,11 @@ export interface VideoResultResponse {
   tasks: VideoTask[];
 }
 
+export interface VideoAiModel{
+  id: string;
+  title: string;
+}
+
 export const videoApi = {
   createProject: (req: CreateProjectRequest) =>
     api.post<VideoProject>("/api/v1/video/projects", req),
@@ -137,4 +143,7 @@ export const videoApi = {
     api.get<VideoResultResponse>(
       `/api/v1/projects/${projectId}/videos/result/${requestId}`,
     ),
+
+  getModels: (projectId: string): Promise<VideoAiModel[]> =>
+    api.get<VideoAiModel[]>(`/api/v1/projects/${projectId}/videos/models`),
 };

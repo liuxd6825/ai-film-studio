@@ -6,7 +6,7 @@ import {
   CANVAS_NODE_TYPES,
 } from "../domain/canvasNodes";
 import { useCanvasStore } from "../stores/canvasStore";
-import { aimodelApi, type AIModel } from "../../../api/aimodelApi";
+import { llmApi, type LLMModel } from "../../../api/llmApi";
 import { NodeToolbar } from "../ui/NodeToolbar";
 
 const MAX_PREVIEW_LENGTH = 100;
@@ -78,7 +78,7 @@ export const TextNode = memo(function TextNode({
   const [error, setError] = useState<string | null>(null);
   const [taskStatus, setTaskStatus] = useState<"idle" | "pending" | "processing" | "completed" | "failed" | "cancelled">("idle");
   const [taskProgress, setTaskProgress] = useState(0);
-  const [availableAIModels, setAvailableAIModels] = useState<AIModel[]>([]);
+  const [availableAIModels, setAvailableAIModels] = useState<LLMModel[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -128,7 +128,7 @@ export const TextNode = memo(function TextNode({
 
   useEffect(() => {
     if (showFloatingPanel) {
-      aimodelApi.listByWorkMode("text-to-video").then((models) => {
+      llmApi.getModels(projectId || "default").then((models) => {
         setAvailableAIModels(models);
         if (!models.some((m) => m.id === data.aiModel)) {
           updateNodeData(id, { aiModel: models[0]?.id || "veo" });

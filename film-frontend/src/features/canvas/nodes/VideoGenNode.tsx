@@ -12,9 +12,8 @@ import {
   IMAGE_ASPECT_RATIOS,
 } from "../domain/canvasNodes";
 import { useCanvasStore } from "../stores/canvasStore";
-import { videoApi, type GenerateVideoRequest } from "../../../api/videoApi";
+import { videoApi, type GenerateVideoRequest, type VideoAiModel } from "../../../api/videoApi";
 import { canvasTaskApi } from "../../../api/canvasTaskApi";
-import { aimodelApi, type AIModel } from "../../../api/aimodelApi";
 import { VideoSelectorModal } from "../ui/VideoSelectorModal";
 import { KeyframeModal } from "../ui/KeyframeModal";
 import { downloadUrl } from "../domain/downloadUtils";
@@ -131,7 +130,7 @@ export const VideoGenNode = memo(function VideoGenNode({
   const [showKeyframeModal, setShowKeyframeModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [availableAIModels, setAvailableAIModels] = useState<AIModel[]>([]);
+  const [availableAIModels, setAvailableAIModels] = useState<VideoAiModel[]>([]);
   const [taskStatus, setTaskStatus] = useState(data.taskStatus || "idle");
   const [taskProgress, setTaskProgress] = useState(data.taskProgress || 0);
 
@@ -178,7 +177,7 @@ export const VideoGenNode = memo(function VideoGenNode({
 
   useEffect(() => {
     if (showFloatingPanel) {
-      aimodelApi.listByWorkMode("text-to-video").then((models) => {
+      videoApi.getModels(projectId || "default").then((models) => {
         setAvailableAIModels(models);
         if (!models.some((m) => m.id === data.aiModel)) {
           updateNodeData(id, { aiModel: models[0]?.id || "veo" });

@@ -331,6 +331,28 @@ class ApiService:
         asyncio.create_task(background_generate())
         return Result(data={"result_id": request_id, "result": "生成中", "result_url": self._build_result_url(request_id)})
 
+
+    async def get_request(self, session: AsyncSession, request_id: str)-> Result:
+        client_request_service = ClientRequestService(session)
+        client_request = await client_request_service.get_client_request(request_id)
+
+        if not client_request:
+            return Result(code=404, success=False, message="Request not found")
+
+        return Result(
+            code=200,
+            success=True,
+            data={
+                "request_id": client_request.id,
+                "status":client_request.status,
+                "system":client_request.system,
+                "desc":client_request.desc,
+                "workspace": client_request.workspace,
+            }
+        )
+
+
+
     async def get_request_result(self, session: AsyncSession, request_id: str) -> Result:
         client_request_service = ClientRequestService(session)
         task_service = TaskService(session)
@@ -372,10 +394,21 @@ class ApiService:
                 "desc": task.desc,
                 "created_at": task.created_at.isoformat() if task.created_at else None,
                 "updated_at": task.updated_at.isoformat() if task.updated_at else None,
-                "results": results_with_workspace
+                "file_urls": results_with_workspace
             })
 
-        return Result(data={"request_id": request_id, "tasks": task_list})
+        return Result(
+            code=200,
+            success=True,
+            data={
+                "request_id": client_request.id,
+                "status": client_request.status,
+                "system": client_request.system,
+                "desc": client_request.desc,
+                "workspace": client_request.workspace,
+                "tasks": task_list
+            }
+        )
 
 
 api_service = ApiService()

@@ -32,9 +32,14 @@ async def generate_images(req: ImageGenerateBatchRequest, session: AsyncSession 
     return JSONResponse(content=result.model_dump())
 
 
-@router.get("/result/{request_id}")
+@router.get("/request/{request_id}/result")
 async def get_request_result(request_id: str, session: AsyncSession = Depends(get_db)):
     result = await api_service.get_request_result(session, request_id)
+    return JSONResponse(content=result.model_dump())
+
+@router.get("/request/{request_id}")
+async def get_request(request_id: str, session: AsyncSession = Depends(get_db)):
+    result = await api_service.get_request(session, request_id)
     return JSONResponse(content=result.model_dump())
 
 

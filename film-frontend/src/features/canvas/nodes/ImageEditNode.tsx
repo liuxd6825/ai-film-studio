@@ -12,9 +12,8 @@ import {
   IMAGE_ASPECT_RATIOS,
 } from "../domain/canvasNodes";
 import { useCanvasStore } from "../stores/canvasStore";
-import { imageApi } from "../../../api/imageApi";
+import { imageApi, type ImageAiModel } from "../../../api/imageApi";
 import { canvasTaskApi } from "../../../api/canvasTaskApi";
-import { aimodelApi, type AIModel } from "../../../api/aimodelApi";
 import { ImageSelectorModal } from "../ui/ImageSelectorModal";
 import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
@@ -60,7 +59,7 @@ export const ImageEditNode = memo(function ImageEditNode({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
-  const [availableAIModels, setAvailableAIModels] = useState<AIModel[]>([]);
+  const [availableAIModels, setAvailableAIModels] = useState<ImageAiModel[]>([]);
   const [taskStatus, setTaskStatus] = useState<ImageEditTaskStatus>(
     data.taskStatus || "idle",
   );
@@ -111,14 +110,14 @@ export const ImageEditNode = memo(function ImageEditNode({
 
   useEffect(() => {
     if (showFloatingPanel) {
-      aimodelApi.listByWorkMode(data.workMode).then((models) => {
+      imageApi.getModels(projectId || "default").then((models) => {
         setAvailableAIModels(models);
         if (!models.some((m) => m.id === data.aiModel)) {
           updateNodeData(id, { aiModel: models[0]?.id || "dall-e-2" });
         }
       });
     }
-  }, [showFloatingPanel, data.workMode]);
+  }, [showFloatingPanel, projectId]);
 
   useEffect(() => {
     if (data.taskStatus) {
