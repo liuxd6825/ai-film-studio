@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"gorm.io/gorm"
 	"open-film-service/internal/model"
+
+	"gorm.io/gorm"
 )
 
 type CanvasTaskRepository struct {
@@ -34,7 +35,7 @@ func (r *CanvasTaskRepository) Update(task *model.CanvasTask) error {
 	return r.db.Save(task).Error
 }
 
-func (r *CanvasTaskRepository) UpdateStatus(id string, status int, resultURL string, resultData string, errorMessage string, progress int) error {
+func (r *CanvasTaskRepository) UpdateStatus(id string, status int, resultURL string, resultData string, errorMessage string) error {
 	updates := map[string]interface{}{
 		"status": status,
 	}
@@ -47,7 +48,6 @@ func (r *CanvasTaskRepository) UpdateStatus(id string, status int, resultURL str
 	if errorMessage != "" {
 		updates["error_message"] = errorMessage
 	}
-	updates["progress"] = progress
 	return r.db.Model(&model.CanvasTask{}).Where("id = ?", id).Updates(updates).Error
 }
 

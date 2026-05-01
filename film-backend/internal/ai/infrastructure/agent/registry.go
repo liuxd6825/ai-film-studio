@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"open-film-service/internal/ai/agent/middleware"
-	tools2 "open-film-service/internal/ai/agent/tools"
+	"open-film-service/internal/ai/infrastructure/agent/middleware"
+	"open-film-service/internal/ai/infrastructure/agent/tools"
 	"path/filepath"
 	"strings"
 	"time"
@@ -256,23 +256,23 @@ func (r *AgentRegistry) BuildToolsNode(agentId, projectID string) (*compose.Tool
 
 	var toolBases []tool.BaseTool
 	if r.fileSvc != nil {
-		fileTools := tools2.NewFileTools(r.fileSvc)
+		fileTools := tools.NewFileTools(r.fileSvc)
 		toolBases = append(toolBases, fileTools.Tools()...)
 	}
 	if r.folderSvc != nil {
-		folderTools := tools2.NewFolderTools(r.folderSvc)
+		folderTools := tools.NewFolderTools(r.folderSvc)
 		toolBases = append(toolBases, folderTools.Tools()...)
 	}
 	if r.charSvc != nil {
-		charTools := tools2.NewCharacterTools(r.charSvc)
+		charTools := tools.NewCharacterTools(r.charSvc)
 		toolBases = append(toolBases, charTools.Tools()...)
 	}
 	if r.sceneSvc != nil {
-		sceneTools := tools2.NewSceneTools(r.sceneSvc)
+		sceneTools := tools.NewSceneTools(r.sceneSvc)
 		toolBases = append(toolBases, sceneTools.Tools()...)
 	}
 	if r.propSvc != nil {
-		propTools := tools2.NewPropTools(r.propSvc)
+		propTools := tools.NewPropTools(r.propSvc)
 		toolBases = append(toolBases, propTools.Tools()...)
 	}
 

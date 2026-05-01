@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"open-film-service/internal/ai/agent"
+	"open-film-service/internal/ai/infrastructure/agent"
 	"strconv"
 	"strings"
 	"time"

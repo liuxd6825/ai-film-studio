@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 	"log"
-	agent2 "open-film-service/internal/ai/agent"
+	"open-film-service/internal/ai/infrastructure/agent"
 	"open-film-service/internal/service/skill"
 	"strings"
 
@@ -18,10 +18,10 @@ import (
 
 type ChatStreamHandler struct {
 	chatSvc     *chat.ChatService
-	agentRunner *agent2.AgentRunner
+	agentRunner *agent.AgentRunner
 }
 
-func NewChatStreamHandler(chatSvc *chat.ChatService, agentRunner *agent2.AgentRunner) *ChatStreamHandler {
+func NewChatStreamHandler(chatSvc *chat.ChatService, agentRunner *agent.AgentRunner) *ChatStreamHandler {
 	return &ChatStreamHandler{
 		chatSvc:     chatSvc,
 		agentRunner: agentRunner,
@@ -95,7 +95,7 @@ func (h *ChatStreamHandler) ChatMessage(ctx iris.Context) {
 	if req.IncludeThinking {
 		streamWriter = ctx.ResponseWriter()
 	} else {
-		streamWriter = agent2.NewThinkingFilterWriter(ctx.ResponseWriter())
+		streamWriter = agent.NewThinkingFilterWriter(ctx.ResponseWriter())
 	}
 
 	for {
@@ -131,7 +131,7 @@ func (h *ChatStreamHandler) ChatMessage(ctx iris.Context) {
 	}
 
 	fullContent := fullResponse.String()
-	thinking := agent2.GetThinking(&fullContent)
+	thinking := agent.GetThinking(&fullContent)
 	if err := h.chatSvc.SaveMessage(req.ProjectID, sessionID, "assistant", fullContent, "", thinking); err != nil {
 		log.Printf("[StreamAgent] Save error: %v", err)
 	}

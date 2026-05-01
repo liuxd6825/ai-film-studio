@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"open-film-service/internal/ai/agent"
+	"open-film-service/internal/ai/infrastructure/agent"
 
 	"github.com/kataras/iris/v12"
 

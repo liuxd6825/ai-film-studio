@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"github.com/kataras/iris/v12"
 	"open-film-service/internal/config"
+
+	"github.com/kataras/iris/v12"
 )
 
 type Handler struct {
@@ -25,6 +26,7 @@ type Handler struct {
 	Memory         *MemoryHandler
 	Media          *MediaHandler
 	Audio          *AudioHandler
+	LLMHandler     *AILLMHandler
 	Video          *VideoHandler
 	Comfy          *ComfyHandler
 	Dictionary     *DictionaryHandler
@@ -39,16 +41,16 @@ type Handler struct {
 	Keyframe       *KeyframeHandler
 	Prompt         *PromptHandler
 	Category       *CategoryHandler
-	Image          *ImageHandler
+	AIImageHandler *AIImageHandler
 	AIModel        *AIModelHandler
 	AIVideoHandler *AIVideoHandler
-	Jimeng         *JimengHandler
 	CanvasFile     *CanvasFileHandler
 	CanvasTask     *CanvasTaskHandler
 }
 
 func NewHandler(
 	cfg *config.Config,
+	aiLLMHandler *AILLMHandler,
 	authHandler *AuthHandler,
 	orgHandler *OrgHandler,
 	projectHandler *ProjectHandler,
@@ -66,7 +68,6 @@ func NewHandler(
 	skillHandler *SkillHandler,
 	memoryHandler *MemoryHandler,
 	mediaHandler *MediaHandler,
-	audioHandler *AudioHandler,
 	videoHandler *VideoHandler,
 	comfyHandler *ComfyHandler,
 	dictionaryHandler *DictionaryHandler,
@@ -81,15 +82,15 @@ func NewHandler(
 	keyframeHandler *KeyframeHandler,
 	promptHandler *PromptHandler,
 	categoryHandler *CategoryHandler,
-	imageHandler *ImageHandler,
-	aimodelHandler *AIModelHandler,
-	aivideoHandler *AIVideoHandler,
-	jimengHandler *JimengHandler,
+	aiImageHandler *AIImageHandler,
+	aiModelHandler *AIModelHandler,
+	aiVideoHandler *AIVideoHandler,
 	canvasFileHandler *CanvasFileHandler,
 	canvasTaskHandler *CanvasTaskHandler,
 ) *Handler {
 	return &Handler{
 		cfg:            cfg,
+		LLMHandler:     aiLLMHandler,
 		Auth:           authHandler,
 		Org:            orgHandler,
 		Project:        projectHandler,
@@ -107,7 +108,6 @@ func NewHandler(
 		Skill:          skillHandler,
 		Memory:         memoryHandler,
 		Media:          mediaHandler,
-		Audio:          audioHandler,
 		Video:          videoHandler,
 		Comfy:          comfyHandler,
 		Dictionary:     dictionaryHandler,
@@ -122,10 +122,9 @@ func NewHandler(
 		Keyframe:       keyframeHandler,
 		Prompt:         promptHandler,
 		Category:       categoryHandler,
-		Image:          imageHandler,
-		AIModel:        aimodelHandler,
-		AIVideoHandler: aivideoHandler,
-		Jimeng:         jimengHandler,
+		AIImageHandler: aiImageHandler,
+		AIModel:        aiModelHandler,
+		AIVideoHandler: aiVideoHandler,
 		CanvasFile:     canvasFileHandler,
 		CanvasTask:     canvasTaskHandler,
 	}

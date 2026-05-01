@@ -65,15 +65,18 @@ func NewRouter(h *Handler) *iris.Application {
 		api.Get("/projects/:projectId/canvas/nodes/:nodeId/task-images", h.CanvasTask.GetNodeTaskImages)
 		api.Get("/projects/:projectId/canvas/nodes/:nodeId/task-images/count", h.CanvasTask.GetNodeTaskImagesCount)
 
-		// Image 生成路由
-		api.Post("/projects/:projectId/images/generate", h.Image.Generate)
+		// AI LLM 生成路由
+		api.Get("/projects/:projectId/llm/models", h.LLMHandler.GetModels)
 
-		// AI 模型路由
-		api.Get("/ai-models", h.AIModel.ListByWorkMode)
+		// AI Image 生成路由
+		api.Post("/projects/:projectId/images/generate", h.AIImageHandler.Generate)
+		api.Get("/projects/:projectId/images/models", h.AIImageHandler.GetModels)
+		api.Get("/projects/:projectId/images/task", h.AIImageHandler.GetTask)
 
 		// AI 视频生成路由
 		api.Post("/projects/:projectId/videos/generate", h.AIVideoHandler.Generate)
-		api.Get("/projects/:projectId/videos/result/:requestId", h.Jimeng.GetResult)
+		api.Get("/projects/:projectId/videos/models", h.AIVideoHandler.GetModels)
+		api.Get("/projects/:projectId/videos/task", h.AIVideoHandler.GetTask)
 
 		api.Get("/styles", h.Style.List)
 		api.Post("/styles", h.Style.Create)

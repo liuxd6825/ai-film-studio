@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"open-film-service/internal/ai"
+	"open-film-service/internal/ai/aioptions"
 	"time"
 
 	"open-film-service/internal/model"
 	"open-film-service/internal/repository"
-	"open-film-service/internal/service/ai_jimeng"
 
 	"github.com/google/uuid"
 	"golang.org/x/sync/singleflight"
@@ -39,19 +40,26 @@ type NodeTaskImagesResult struct {
 type Service struct {
 	repo                 *repository.CanvasTaskRepository
 	canvasTaskResultRepo *repository.CanvasTaskResultRepository
-	jimengService        *ai_jimeng.Service
 	sfGroup              singleflight.Group
+	aiImageService       *ai.AiImageService
+	aiVideoService       *ai.AiVideoService
 }
 
-func NewService(repo *repository.CanvasTaskRepository, canvasTaskResultRepo *repository.CanvasTaskResultRepository, jimengService *ai_jimeng.Service) *Service {
+func NewService(repo *repository.CanvasTaskRepository,
+	canvasTaskResultRepo *repository.CanvasTaskResultRepository,
+	aiImageService *ai.AiImageService,
+	aiVideoService *ai.AiVideoService,
+) *Service {
 	return &Service{
 		repo:                 repo,
 		canvasTaskResultRepo: canvasTaskResultRepo,
-		jimengService:        jimengService,
+		aiImageService:       aiImageService,
+		aiVideoService:       aiVideoService,
 	}
 }
 
 type CreateTaskRequest struct {
+	TaskId    string
 	CanvasID  string
 	NodeID    string
 	ProjectID string
@@ -62,6 +70,7 @@ type CreateTaskRequest struct {
 	ResultURL string
 	ResultID  string
 	Params    map[string]interface{}
+	Workspace string
 }
 
 func (s *Service) CreateTask(req CreateTaskRequest) (*model.CanvasTask, error) {
@@ -71,7 +80,7 @@ func (s *Service) CreateTask(req CreateTaskRequest) (*model.CanvasTask, error) {
 	}
 
 	task := &model.CanvasTask{
-		ID:        uuid.New().String(),
+		ID:        req.TaskId,
 		CanvasID:  req.CanvasID,
 		NodeID:    req.NodeID,
 		ProjectID: req.ProjectID,
@@ -83,9 +92,9 @@ func (s *Service) CreateTask(req CreateTaskRequest) (*model.CanvasTask, error) {
 		ResultID:  req.ResultID,
 		Params:    string(paramsJSON),
 		Status:    model.TaskStatusPending,
-		Progress:  0,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
+		Workspace: req.Workspace,
 	}
 
 	if err := s.repo.Create(task); err != nil {
@@ -103,26 +112,26 @@ func (s *Service) GetTask(id string) (*model.CanvasTask, error) {
 	return task, nil
 }
 
-func (s *Service) UpdateTaskStatus(id string, status int, resultURL string, resultData string, errorMessage string, progress int) error {
-	return s.repo.UpdateStatus(id, status, resultURL, resultData, errorMessage, progress)
+func (s *Service) UpdateTaskStatus(id string, status int, resultURL string, resultData string, errorMessage string) error {
+	return s.repo.UpdateStatus(id, status, resultURL, resultData, errorMessage)
 
 }
 
 func (s *Service) StartTask(id string) error {
-	return s.repo.UpdateStatus(id, model.TaskStatusProcessing, "", "", "", 0)
+	return s.repo.UpdateStatus(id, model.TaskStatusProcessing, "", "", "")
 }
 
-func (s *Service) CompleteTask(ctx context.Context, taskID string, results []*model.CanvasTaskResult) error {
+func (s *Service) CompleteTask(ctx context.Context, taskID string, results []*model.CanvasTaskResult) (*model.CanvasTask, error) {
 	return s.completeTaskImpl(ctx, taskID, results)
 }
 
-func (s *Service) completeTaskImpl(ctx context.Context, taskID string, results []*model.CanvasTaskResult) error {
+func (s *Service) completeTaskImpl(ctx context.Context, taskID string, results []*model.CanvasTaskResult) (*model.CanvasTask, error) {
 	task, err := s.repo.GetByID(taskID)
 	if err != nil {
-		return ErrTaskNotFound
+		return nil, ErrTaskNotFound
 	}
 
-	return s.repo.DB().Transaction(func(tx *gorm.DB) error {
+	err = s.repo.DB().Transaction(func(tx *gorm.DB) error {
 		if len(results) > 0 {
 			for _, result := range results {
 				result.TaskID = taskID
@@ -139,25 +148,31 @@ func (s *Service) completeTaskImpl(ctx context.Context, taskID string, results [
 		if len(results) > 0 {
 			resultURL = results[0].URL
 		}
+
 		return tx.Model(&model.CanvasTask{}).Where("id = ?", task.ID).Updates(map[string]interface{}{
 			"status":      model.TaskStatusCompleted,
 			"result_url":  resultURL,
 			"result_data": task.ResultData,
-			"progress":    100,
 		}).Error
 	})
+
+	if err == nil {
+		task.Status = model.TaskStatusCompleted
+	}
+
+	return task, err
 }
 
 func (s *Service) FailTask(id string, errorMessage string) error {
 	_, err, _ := s.sfGroup.Do(id, func() (interface{}, error) {
-		return nil, s.repo.UpdateStatus(id, model.TaskStatusFailed, "", "", errorMessage, 0)
+		return nil, s.repo.UpdateStatus(id, model.TaskStatusFailed, "", "", errorMessage)
 	})
 	return err
 }
 
 func (s *Service) CancelTask(id string) error {
 	_, err, _ := s.sfGroup.Do(id, func() (interface{}, error) {
-		return nil, s.repo.UpdateStatus(id, model.TaskStatusCancelled, "", "", "", 0)
+		return nil, s.repo.UpdateStatus(id, model.TaskStatusCancelled, "", "", "")
 	})
 	return err
 }
@@ -208,46 +223,41 @@ func (s *Service) CountNodeTaskImages(nodeID string) (int64, error) {
 	return s.canvasTaskResultRepo.CountByNodeID(nodeID)
 }
 
-func (s *Service) PollJimengResult(taskID string, workspace string) error {
-	return s.pollJimengResultImpl(taskID, workspace)
+func (s *Service) getAiTask(ctx context.Context, canvasTask *model.CanvasTask) (*aioptions.Task, error) {
+	if canvasTask.TaskType == "image" {
+		return s.aiImageService.GetTask(ctx, canvasTask.Model, canvasTask.ID)
+	} else if canvasTask.TaskType == "video" {
+		return s.aiVideoService.GetTask(ctx, canvasTask.Model, canvasTask.ID)
+	}
+	return nil, errors.New("invalid task type")
 }
 
-func (s *Service) pollJimengResultImpl(taskID string, workspace string) error {
+func (s *Service) PollTask(ctx context.Context, taskID string) (*model.CanvasTask, error) {
 	task, err := s.repo.GetByID(taskID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if task.Provider != "jimeng" {
-		return errors.New("only jimeng tasks support polling")
+	if task.Status == aioptions.TaskStatusCompleted || task.Status == aioptions.TaskStatusFailed {
+		return task, nil
 	}
-	ctx := context.Background()
-	result, err := s.jimengService.GetResult(ctx, workspace, task.ResultID)
+
+	aiTask, err := s.getAiTask(ctx, task)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if len(result.Tasks) == 0 {
-		return errors.New("no tasks returned")
-	}
-
-	jimengTask := result.Tasks[0]
-	switch jimengTask.Status {
-	case "completed":
+	switch aiTask.Status {
+	case aioptions.TaskStatusCompleted: //  "completed"
 		var results []*model.CanvasTaskResult
-		for _, url := range jimengTask.Results {
-			results = append(results, &model.CanvasTaskResult{URL: url})
+		for _, content := range aiTask.Contents {
+			results = append(results, &model.CanvasTaskResult{URL: content.VideoURL})
 		}
 		return s.CompleteTask(ctx, taskID, results)
-	case "failed":
-		return s.FailTask(taskID, jimengTask.Desc)
-	case "processing", "pending", "generating":
-		progress := 50
-		if jimengTask.Status == "pending" {
-			progress = 25
-		}
-		return s.repo.UpdateStatus(taskID, model.TaskStatusProcessing, "", "", "", progress)
+	case aioptions.TaskStatusFailed:
+		err = s.FailTask(taskID, aiTask.ErrorMsg)
+		return task, err
 	default:
-		return nil
+		return task, errors.New("invalid task status")
 	}
 }

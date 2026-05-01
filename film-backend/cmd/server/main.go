@@ -4,7 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	agent2 "open-film-service/internal/ai/agent"
+	"open-film-service/internal/ai"
+	"open-film-service/internal/ai/infrastructure/agent"
+	"open-film-service/internal/service/ai_llm"
 	"open-film-service/internal/service/ai_video"
 	"os"
 	"path/filepath"
@@ -24,7 +26,6 @@ import (
 	"open-film-service/internal/pkg/password"
 	"open-film-service/internal/repository"
 	agentSvcPkg "open-film-service/internal/service/agent"
-	"open-film-service/internal/service/audio"
 	canvasSvc "open-film-service/internal/service/canvas"
 	"open-film-service/internal/service/chat"
 	"open-film-service/internal/service/comfy"
@@ -42,8 +43,7 @@ import (
 	"open-film-service/internal/service/video"
 
 	promptSvc "open-film-service/internal/service"
-	imageSvc "open-film-service/internal/service/ai_image"
-	jimengSvc "open-film-service/internal/service/ai_jimeng"
+	"open-film-service/internal/service/ai_image"
 	aimodelSvc "open-film-service/internal/service/ai_model"
 	canvasFileSvc "open-film-service/internal/service/canvas_file"
 	canvasTaskSvc "open-film-service/internal/service/canvas_task"
@@ -145,29 +145,28 @@ func main() {
 	mediaSvc := media.NewService(mediaTaskRepo)
 	videoSvc := video.NewService(videoTaskRepo)
 	comfySvc := comfy.NewService(comfyWorkflowRepo)
-	audioSvc := audio.NewService(cfg.Models)
 
 	skillLoader := initSkillLoader()
 	skillEngine := initSkillEngine(skillLoader)
 	agentExecutor := agentSvcPkg.NewExecutor(agentRepo, modelCfgRepo, skillLoader, skillEngine)
 
-	agentMasterCfg, err := agent2.LoadMasterConfig(cfg.MasterAgentPath)
+	agentMasterCfg, err := agent.LoadMasterConfig(cfg.MasterAgentPath)
 	if err != nil {
 		logging.Error("failed to load master agent config: ", err)
 	}
-	agentConfigs, err := agent2.LoadAgentConfigs(filepath.Dir(cfg.MasterAgentPath))
+	agentConfigs, err := agent.LoadAgentConfigs(filepath.Dir(cfg.MasterAgentPath))
 	if err != nil {
 		logging.Error("failed to load agent configs: ", err)
 	}
 
-	var agentRunner *agent2.AgentRunner
+	var agentRunner *agent.AgentRunner
 	charSvcForAgent := characterSvc.NewService(characterRepo, visualImageRepo)
 	sceneSvcForAgent := sceneSvc.NewService(scenesRepo, visualImageRepo)
 	propSvcForAgent := propSvc.NewService(propRepo, visualImageRepo)
 	if agentMasterCfg != nil && agentConfigs != nil {
 		agentsDir := filepath.Dir(cfg.MasterAgentPath)
-		agentRegistry := agent2.NewAgentRegistry(agentConfigs, agentMasterCfg.DefaultAgent, agentsDir, skillLoader, fileSvc, folderSvc, charSvcForAgent, sceneSvcForAgent, propSvcForAgent)
-		agentRunner = agent2.NewAgentRunner(agentRegistry, cfg)
+		agentRegistry := agent.NewAgentRegistry(agentConfigs, agentMasterCfg.DefaultAgent, agentsDir, skillLoader, fileSvc, folderSvc, charSvcForAgent, sceneSvcForAgent, propSvcForAgent)
+		agentRunner = agent.NewAgentRunner(agentRegistry, cfg)
 		logging.Info("AgentRunner initialized with default agent: ", agentMasterCfg.DefaultAgent)
 	}
 
@@ -200,7 +199,6 @@ func main() {
 	skillHandler := handler.NewSkillHandler(skillSvc)
 	memoryHandler := handler.NewMemoryHandler(memory.NewService(memoryRepo))
 	mediaHandler := handler.NewMediaHandler(mediaSvc)
-	audioHandler := handler.NewAudioHandler(audioSvc)
 	videoHandler := handler.NewVideoHandler(videoSvc)
 	comfyHandler := handler.NewComfyHandler(comfySvc)
 	systemSkillHandler := handler.NewSystemSkillHandler(skillLoader, agentExecutor)
@@ -234,25 +232,30 @@ func main() {
 	aimodelService := aimodelSvc.NewService()
 	aimodelHandler := handler.NewAIModelHandler(aimodelService)
 
-	jimengService := jimengSvc.NewService(cfg.Jimeng.BaseURL)
-	jimengHandler := handler.NewJimengHandler(jimengService, projectSvc)
-
 	canvasFileService := canvasFileSvc.NewService(canvasFileRepo)
 	canvasFileHandler := handler.NewCanvasFileHandler(canvasFileService)
 
-	canvasTaskService := canvasTaskSvc.NewService(canvasTaskRepo, canvasTaskResultRepo, jimengService)
-	canvasTaskHandler := handler.NewCanvasTaskHandler(canvasTaskService, jimengService, canvasTaskResultRepo)
+	aiLLMService := ai.NewAiLLMService(&cfg.LangModels)
+	aiImageService := ai.NewAiImageService(&cfg.ImageModels)
+	aiVideoService := ai.NewAiVideoService(&cfg.VideoModels)
 
-	videoGenService := ai_video.NewService(cfg, jimengService)
-	videoGenHandler := handler.NewAIVideoHandler(videoGenService, canvasTaskHandler)
+	canvasTaskService := canvasTaskSvc.NewService(canvasTaskRepo, canvasTaskResultRepo, aiImageService, aiVideoService)
+	canvasTaskHandler := handler.NewCanvasTaskHandler(canvasTaskService, aiVideoService, aiImageService, canvasTaskResultRepo)
 
-	imageService := imageSvc.NewService(cfg, jimengService)
+	llmService := ai_llm.NewService(cfg, aiLLMService)
+	llmHandler := handler.NewAILLMHandler(llmService)
+
+	videoService := ai_video.NewService(cfg, aiVideoService)
+	videoGenHandler := handler.NewAIVideoHandler(videoService, canvasTaskService)
+
+	imageService := ai_image.NewService(cfg, aiImageService, canvasTaskRepo)
 	imageHandler := handler.NewImageHandler(imageService, canvasTaskHandler)
 
 	migrateCanvasFiles(canvasFileService)
 
 	h := handler.NewHandler(
 		cfg,
+		llmHandler,
 		authHandler,
 		orgHandler,
 		projectHandler,
@@ -270,7 +273,7 @@ func main() {
 		skillHandler,
 		memoryHandler,
 		mediaHandler,
-		audioHandler,
+
 		videoHandler,
 		comfyHandler,
 		dictionaryHandler,
@@ -288,7 +291,6 @@ func main() {
 		imageHandler,
 		aimodelHandler,
 		videoGenHandler,
-		jimengHandler,
 		canvasFileHandler,
 		canvasTaskHandler,
 	)

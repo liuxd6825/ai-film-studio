@@ -1,4 +1,4 @@
-package ai_image
+package ai_llm
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"open-film-service/internal/ai"
 	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/config"
-	"open-film-service/internal/repository"
 )
 
 var (
@@ -55,32 +54,17 @@ type GenerationResult struct {
 }
 
 type Service struct {
-	config          *config.Config
-	aiImageService  *ai.AiImageService
-	canvasTaskRepos *repository.CanvasTaskRepository
+	config       *config.Config
+	aiLLMService *ai.AiLLMService
 }
 
-func NewService(config *config.Config, aiImageService *ai.AiImageService, canvasTaskRepos *repository.CanvasTaskRepository) *Service {
+func NewService(config *config.Config, aiLLMService *ai.AiLLMService) *Service {
 	return &Service{
-		config:          config,
-		aiImageService:  aiImageService,
-		canvasTaskRepos: canvasTaskRepos,
+		config:       config,
+		aiLLMService: aiLLMService,
 	}
-}
-
-func (s *Service) NewTask(ctx context.Context, request GenerationRequest) (task *aioptions.Task, err error) {
-	newTaskOptions := aioptions.NewTaskOptions{}
-	return s.aiImageService.NewTask(ctx, newTaskOptions)
-}
-
-func (s *Service) GetTask(ctx context.Context, taskID string) (*aioptions.Task, error) {
-	task, err := s.canvasTaskRepos.GetByID(taskID)
-	if err != nil {
-		return nil, err
-	}
-	return s.aiImageService.GetTask(ctx, task.Model, taskID)
 }
 
 func (s *Service) GetModels(ctx context.Context) []aioptions.Model {
-	return s.aiImageService.GetModels()
+	return s.aiLLMService.GetModels()
 }

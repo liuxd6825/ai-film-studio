@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"open-film-service/internal/ai/chatmodel"
+	"open-film-service/internal/ai/infrastructure/chatmodel"
 	"strings"
 
 	"open-film-service/internal/config"
@@ -181,9 +181,9 @@ func (r *AgentRunner) GetDefaultAgent() *AgentConfig {
 }
 
 func (r *AgentRunner) GetModel(providerName, modelName string) (einoModel.ToolCallingChatModel, error) {
-	modelCfg, err := r.config.GetModel(providerName, modelName)
-	if err != nil {
-		return nil, err
+	modelCfg, ok := r.config.LangModels.GetModel(providerName, modelName)
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("model not found %s %s", providerName, modelName))
 	}
 	if modelCfg == nil {
 		return nil, fmt.Errorf("model not found in config: %s", modelName)

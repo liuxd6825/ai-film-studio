@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"context"
 	"errors"
+	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/service/ai_video"
-	"strconv"
+	"open-film-service/internal/service/canvas_task"
 	"strings"
 
 	"open-film-service/internal/pkg/validator"
@@ -12,14 +14,14 @@ import (
 )
 
 type AIVideoHandler struct {
-	svc     *ai_video.Service
-	taskSvc *CanvasTaskHandler
+	videoSvc *ai_video.Service
+	taskSvc  *canvas_task.Service
 }
 
-func NewAIVideoHandler(svc *ai_video.Service, taskSvc *CanvasTaskHandler) *AIVideoHandler {
+func NewAIVideoHandler(videoSvc *ai_video.Service, taskSvc *canvas_task.Service) *AIVideoHandler {
 	return &AIVideoHandler{
-		svc:     svc,
-		taskSvc: taskSvc,
+		videoSvc: videoSvc,
+		taskSvc:  taskSvc,
 	}
 }
 
@@ -63,34 +65,31 @@ func (h *AIVideoHandler) Generate(ctx iris.Context) {
 		}
 	}
 
-	aiReq := ai_video.GenerationRequest{
-		Prompt:         req.Prompt,
-		Model:          model,
-		Duration:       req.Duration,
-		Fps:            strconv.Itoa(req.FPS),
-		ReferenceFiles: req.ReferenceFiles,
-		AspectRatio:    req.AspectRatio,
+	aiReq := aioptions.NewTaskOptions{
+		Prompt: req.Prompt,
+		Model:  model,
+		//Duration:       req.Duration,
+		//Fps:            strconv.Itoa(req.FPS),
+		//ReferenceFiles: req.ReferenceFiles,
+		//AspectRatio:    req.AspectRatio,
 	}
-	aiResp, err := h.svc.Generate(ctx, aiReq)
+	aiTask, err := h.videoSvc.NewTask(ctx, aiReq)
 	if err != nil {
 		validator.InternalServerError(ctx, err)
 		return
 	}
 
-	response := AIGenerateVideoResponse{}
-
 	if h.taskSvc != nil && req.NodeID != "" {
-		task, createErr := h.taskSvc.CreateTask(
-			projectID,
-			req.CanvasID,
-			req.NodeID,
-			aiResp.ResultId,
-			aiResp.ResultUrl,
-			"video_generation",
-			"jimeng",
-			model,
-			req.Prompt,
-			map[string]interface{}{
+		createTaskRequest := canvas_task.CreateTaskRequest{
+			TaskId:    aiTask.TaskId,
+			ProjectID: projectID,
+			CanvasID:  req.CanvasID,
+			NodeID:    req.NodeID,
+			TaskType:  aioptions.TaskTypeVideo,
+			Provider:  aiTask.Provider,
+			Model:     model,
+			Prompt:    req.Prompt,
+			Params: map[string]interface{}{
 				"prompt":         req.Prompt,
 				"model":          model,
 				"duration":       req.Duration,
@@ -98,14 +97,38 @@ func (h *AIVideoHandler) Generate(ctx iris.Context) {
 				"referenceFiles": req.ReferenceFiles,
 				"aspectRatio":    req.AspectRatio,
 			},
-		)
-		if createErr == nil && task != nil {
-			response.TaskID = task.ID
-			response.ResultID = aiResp.ResultId
-			response.ResultURL = aiResp.ResultUrl
-			response.Status = task.Status
+		}
+		task, createErr := h.taskSvc.CreateTask(createTaskRequest)
+		if createErr != nil {
+			validator.InternalServerError(ctx, createErr)
+			return
+		} else {
+			validator.Success(ctx, task)
 		}
 	}
+}
 
-	validator.Success(ctx, response)
+func (h *AIVideoHandler) GetTask(ctx iris.Context) {
+	projectID := ctx.Params().GetString("projectId")
+	if projectID == "" {
+		validator.InternalServerError(ctx, errors.New("projectID is required"))
+		return
+	}
+	taskId := ctx.Params().GetString("taskId")
+	if taskId == "" {
+		validator.InternalServerError(ctx, errors.New("taskId is required"))
+		return
+	}
+
+	task, err := h.taskSvc.GetTask(taskId)
+	if err != nil {
+		validator.InternalServerError(ctx, err)
+	} else {
+		validator.Success(ctx, task)
+	}
+}
+
+func (h *AIVideoHandler) GetModels(ctx iris.Context) {
+	models := h.videoSvc.GetModels(context.Background())
+	validator.Success(ctx, models)
 }

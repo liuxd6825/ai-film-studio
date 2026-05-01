@@ -3,10 +3,9 @@ package ai_video
 import (
 	"context"
 	"errors"
+	"open-film-service/internal/ai"
+	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/config"
-	"open-film-service/internal/service/ai_jimeng"
-	"strconv"
-	"time"
 )
 
 var (
@@ -48,53 +47,25 @@ type GenerationResult struct {
 }
 
 type Service struct {
-	config        *config.Config
-	jimengService *ai_jimeng.Service
+	config       *config.Config
+	videoService *ai.AiVideoService
 }
 
-func NewService(config *config.Config, jimengService *ai_jimeng.Service) *Service {
+func NewService(config *config.Config, videoService *ai.AiVideoService) *Service {
 	return &Service{
-		config:        config,
-		jimengService: jimengService,
+		config:       config,
+		videoService: videoService,
 	}
 }
 
-func (s *Service) Generate(ctx context.Context, req GenerationRequest) (*GenerationResult, error) {
-	startTime := time.Now()
-
-	switch req.Model {
-	case "seedance_2.0_fast_web":
-		return s.generateWithJiMengWeb(ctx, req, startTime)
-	case "seedance_2.0_web":
-		return s.generateWithJiMengWeb(ctx, req, startTime)
-	case "seedance_2.0_fast_web_vip":
-		return s.generateWithJiMengWeb(ctx, req, startTime)
-	case "seedance_2.0_web_vip":
-		return s.generateWithJiMengWeb(ctx, req, startTime)
-	default:
-		return nil, ErrInvalidProvider
-	}
+func (s *Service) NewTask(ctx context.Context, opts aioptions.NewTaskOptions) (*aioptions.Task, error) {
+	return s.videoService.NewTask(ctx, opts)
 }
 
-func (s *Service) generateWithJiMengWeb(ctx context.Context, req GenerationRequest, startTime time.Time) (*GenerationResult, error) {
-	service := s.jimengService
-	genReq := ai_jimeng.GenerateRequest{
-		Prompt:      req.Prompt,
-		Model:       req.Model,
-		AspectRatio: req.AspectRatio,
-		WorkType:    ai_jimeng.WorkType_ALL.String(),
-		FilesUrl:    req.ReferenceFiles,
-		Workspace:   "11117754646028",
-		Seed:        strconv.FormatInt(int64(req.Duration), 10) + "s",
-	}
-	response, err := service.Generate(ctx, genReq)
-	if err != nil {
-		return nil, err
-	}
-	return &GenerationResult{
-		ID:        response.ResultID,
-		ResultId:  response.ResultID,
-		ResultUrl: response.ResultUrl,
-		Provider:  "jimeng",
-	}, nil
+func (s *Service) GetTask(ctx context.Context, model, taskId string) (*aioptions.Task, error) {
+	return s.videoService.GetTask(ctx, model, taskId)
+}
+
+func (s *Service) GetModels(ctx context.Context) []aioptions.Model {
+	return s.videoService.GetModels()
 }

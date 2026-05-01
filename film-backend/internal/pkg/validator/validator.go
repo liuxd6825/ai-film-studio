@@ -312,11 +312,11 @@ func HandleValidation(ctx iris.Context, result *ValidationResult) bool {
 }
 
 func Success(ctx iris.Context, data interface{}) {
-	ctx.JSON(iris.Map{"code": 0, "data": data})
+	ctx.JSON(iris.Map{"code": 200, "data": data})
 }
 
 func SuccessWithMessage(ctx iris.Context, msg string) {
-	ctx.JSON(iris.Map{"code": 0, "message": msg})
+	ctx.JSON(iris.Map{"code": 200, "message": msg})
 }
 
 func ParseAndValidate[T any](ctx iris.Context) (T, bool) {

@@ -1,15 +1,15 @@
 package agent
 
 import (
-	tools2 "open-film-service/internal/ai/agent/tools"
+	"open-film-service/internal/ai/infrastructure/agent/tools"
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 )
 
 type ToolsConfig struct {
-	FileTools   *tools2.FileTools
-	FolderTools *tools2.FolderTools
+	FileTools   *tools.FileTools
+	FolderTools *tools.FolderTools
 }
 
 func (c *ToolsConfig) Tools() []tool.BaseTool {

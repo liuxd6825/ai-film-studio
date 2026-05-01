@@ -11,13 +11,13 @@ import (
 )
 
 type Config struct {
-	ServerAddr      string              `yaml:"server_addr"`
-	DB              DBConfig            `yaml:"db"`
-	Models          ModelsConfig        `yaml:"models"`
-	ShowErrorDetail bool                `yaml:"show_error_detail"`
-	MasterAgentPath string              `yaml:"master_agent_path"`
-	Jimeng          JimengServiceConfig `yaml:"jimeng"`
-	VideoGen        VideoGenConfig      `yaml:"video_gen"`
+	ServerAddr      string       `yaml:"server_addr"`
+	DB              DBConfig     `yaml:"db"`
+	LangModels      ModelsConfig `yaml:"lang_models"`
+	ImageModels     ModelsConfig `yaml:"image_models"`
+	VideoModels     ModelsConfig `yaml:"video_models"`
+	ShowErrorDetail bool         `yaml:"show_error_detail"`
+	MasterAgentPath string       `yaml:"master_agent_path"`
 }
 
 type VideoGenConfig struct {
@@ -26,10 +26,6 @@ type VideoGenConfig struct {
 	ArkAPIKey    string `yaml:"ark_api_key"`
 	ArkModel     string `yaml:"ark_model"`
 	ComfyBaseURL string `yaml:"comfy_base_url"`
-}
-
-type JimengServiceConfig struct {
-	BaseURL string `yaml:"base_url"`
 }
 
 type DBConfig struct {
@@ -51,12 +47,21 @@ type ProviderConfig struct {
 	Models     map[string]*ModelConfig `yaml:"models"`
 }
 
+type DriverType string
+
+const (
+	DriverTypeJimengWeb  = "jimeng_web"
+	DriverTypeOpenAI     = "openai"
+	DriverTypeVolcengine = "volcengine"
+)
+
 type ModelConfig struct {
 	Id               string   `yaml:"id"`
 	Name             string   `yaml:"name"`
 	Title            string   `yaml:"title"`
 	HttpProxy        string   `yaml:"http_proxy"`
-	Provider         string   `yaml:"provider"`
+	Provider         string   ``
+	ProviderTitle    string   ``
 	APIKey           string   `yaml:"api_key"`
 	APIVersion       string   `yaml:"api_version"`
 	DriverType       string   `yaml:"driver_type"`
@@ -98,19 +103,22 @@ func Load() (*Config, error) {
 		panic(err)
 	}
 
-	if err := cfg.validate(); err != nil {
+	if err := cfg.validate(&cfg.LangModels); err != nil {
 		return nil, err
 	}
-
+	if err := cfg.validate(&cfg.ImageModels); err != nil {
+		return nil, err
+	}
+	if err := cfg.validate(&cfg.VideoModels); err != nil {
+		return nil, err
+	}
 	validator.SetShowErrorDetail(cfg.ShowErrorDetail)
 
 	return cfg, nil
 }
 
-func (c *Config) validate() error {
-	// TODO: At least one video provider should be configured (Veo, Ark, or ComfyUI)
-	// Current implementation does not validate VideoGenConfig
-	for pid, provider := range c.Models.Providers {
+func (c *Config) validate(cfg *ModelsConfig) error {
+	for pid, provider := range cfg.Providers {
 		provider.Id = pid
 		if provider.DriverType == "" {
 			return fmt.Errorf("driver_type is required  for %s", pid)
@@ -121,24 +129,32 @@ func (c *Config) validate() error {
 		if provider.BaseURL == "" {
 			return fmt.Errorf("base_url is required for %s ", pid)
 		}
-		for mid, model := range provider.Models {
-			model.Id = mid
-			model.Provider = pid
-			model.BaseURL = provider.BaseURL
-			model.APIKey = provider.APIKey
-			model.DriverType = provider.DriverType
-			if model.Id == "" {
-				return fmt.Errorf("id is required  for %s.%s ", pid, mid)
-			}
-			if model.DriverType == "" {
-				return fmt.Errorf("driver_type is required  for %s.%s ", pid, mid)
-			}
-			if model.Title == "" {
-				return fmt.Errorf("title is required  for %s.%s ", pid, mid)
-			}
-			if model.Title == "" {
-				model.Title = model.Id
-			}
+		if err := c.initModels(pid, provider, provider.Models); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Config) initModels(pid string, provider *ProviderConfig, models map[string]*ModelConfig) error {
+	for mid, model := range models {
+		model.Id = mid
+		model.Provider = pid
+		model.ProviderTitle = provider.Title
+		model.BaseURL = provider.BaseURL
+		model.APIKey = provider.APIKey
+		model.DriverType = provider.DriverType
+		if model.Id == "" {
+			return fmt.Errorf("id is required  for %s.%s ", pid, mid)
+		}
+		if model.DriverType == "" {
+			return fmt.Errorf("driver_type is required  for %s.%s ", pid, mid)
+		}
+		if model.Title == "" {
+			return fmt.Errorf("title is required  for %s.%s ", pid, mid)
+		}
+		if model.Title == "" {
+			model.Title = model.Id
 		}
 	}
 	return nil
@@ -151,28 +167,38 @@ func getEnvOrDefault(key, defaultValue string) string {
 	return defaultValue
 }
 
-func (c *Config) GetProvider(name string) *ProviderConfig {
-	return c.Models.Providers[name]
-}
-
-func (c *Config) GetModel(providerName, modelName string) (*ModelConfig, error) {
-	provider := c.GetProvider(providerName)
-	if provider == nil {
-		return nil, errors.New("provider not found")
-	}
-	for _, cnf := range provider.Models {
-		if cnf.Name == modelName {
-			return cnf, nil
-		}
-	}
-	return nil, errors.New(fmt.Sprintf("model not found %s", modelName))
+func (c *Config) GetLangModelProvider(name string) *ProviderConfig {
+	return c.LangModels.Providers[name]
 }
 
 func (c *Config) String() string {
 	data, err := yaml.Marshal(c)
 	if err != nil {
 		return fmt.Sprintf("{ServerAddr: %s, DB: {DSN: %s}, Models: {Providers: %d, Default: %s}}",
-			c.ServerAddr, c.DB.DSN, len(c.Models.Providers), c.Models.Default)
+			c.ServerAddr, c.DB.DSN, len(c.LangModels.Providers), c.LangModels.Default)
 	}
 	return string(data)
+}
+
+func (c *ModelsConfig) GetProvider(name string) (*ProviderConfig, bool) {
+	p, ok := c.Providers[name]
+	return p, ok
+}
+
+func (c *ModelsConfig) GetModel(provider, model string) (*ModelConfig, bool) {
+	p, ok := c.Providers[provider]
+	if ok {
+		m, ok := p.Models[model]
+		return m, ok
+	}
+	return nil, false
+}
+
+func (c *ProviderConfig) GetModel(modelName string) (*ModelConfig, error) {
+	for _, cnf := range c.Models {
+		if cnf.Name == modelName {
+			return cnf, nil
+		}
+	}
+	return nil, errors.New(fmt.Sprintf("model not found %s", modelName))
 }
