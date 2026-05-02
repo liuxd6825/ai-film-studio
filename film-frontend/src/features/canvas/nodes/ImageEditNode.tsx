@@ -88,7 +88,8 @@ export const ImageEditNode = memo(function ImageEditNode({
       const isImageSettingClick =
         target.closest?.("[data-image-setting-card]") ||
         target.closest?.("[data-image-setting-trigger]") ||
-        target.closest?.("[data-image-setting-dropdown]");
+        target.closest?.("[data-image-setting-dropdown]") ||
+        target.closest?.("[data-image-setting-overlay]");
       if (
         showFloatingPanel &&
         !isImageSettingClick &&

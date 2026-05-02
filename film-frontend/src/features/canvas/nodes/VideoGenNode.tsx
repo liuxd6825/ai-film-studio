@@ -5,7 +5,6 @@ import { Eye, X, Play, Film, Download, Trash2, Image } from "lucide-react";
 import {
   VideoGenNodeData,
   VideoResolution,
-  VideoFPS,
   isUploadNode,
   isExportImageNode,
   isImageEditNode,
@@ -18,6 +17,7 @@ import { VideoSelectorModal } from "../ui/VideoSelectorModal";
 import { KeyframeModal } from "../ui/KeyframeModal";
 import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
+import { VideoSettingCard } from "../components/VideoSettingCard";
 
 const RESOLUTION_OPTIONS: { value: VideoResolution; label: string }[] = [
   { value: "720p", label: "720p" },
@@ -25,11 +25,7 @@ const RESOLUTION_OPTIONS: { value: VideoResolution; label: string }[] = [
   { value: "4K", label: "4K" },
 ];
 
-const FPS_OPTIONS: { value: VideoFPS; label: string }[] = [
-  { value: 24, label: "24fps" },
-  { value: 30, label: "30fps" },
-  { value: 60, label: "60fps" },
-];
+
 
 const DURATION_OPTIONS = [
   { value: "4", label: "4秒" },
@@ -150,12 +146,19 @@ export const VideoGenNode = memo(function VideoGenNode({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Element;
+      const isVideoSettingClick =
+        target.closest?.("[data-video-setting-card]") ||
+        target.closest?.("[data-video-setting-trigger]") ||
+        target.closest?.("[data-video-setting-dropdown]") ||
+        target.closest?.("[data-video-setting-overlay]");
       if (
         showFloatingPanel &&
+        !isVideoSettingClick &&
         panelRef.current &&
         resultRef.current &&
-        !panelRef.current.contains(event.target as Node) &&
-        !resultRef.current.contains(event.target as Node)
+        !panelRef.current.contains(target as Node) &&
+        !resultRef.current.contains(target as Node)
       ) {
         setShowFloatingPanel(false);
       }
@@ -853,68 +856,25 @@ export const VideoGenNode = memo(function VideoGenNode({
                   ))}
                 </select>
 
-                <select
-                  className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  value={data.resolution || "1080p"}
-                  onChange={(e) =>
+                <VideoSettingCard
+                  aspectRatioValue={data.aspectRatio || "16:9"}
+                  aspectRatioOptions={ASPECT_RATIOS}
+                  onAspectRatioChange={(value) =>
+                    updateNodeData(id, { aspectRatio: value })
+                  }
+                  resolutionValue={data.resolution || "1080p"}
+                  resolutionOptions={RESOLUTION_OPTIONS}
+                  onResolutionChange={(value) =>
                     updateNodeData(id, {
-                      resolution: e.target.value as VideoResolution,
+                      resolution: value as VideoResolution,
                     })
                   }
-                >
-                  {RESOLUTION_OPTIONS.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  value={data.fps || 30}
-                  onChange={(e) =>
-                    updateNodeData(id, {
-                      fps: Number(e.target.value) as VideoFPS,
-                    })
+                  durationValue={String(data.duration) || "5"}
+                  durationOptions={DURATION_OPTIONS}
+                  onDurationChange={(value) =>
+                    updateNodeData(id, { duration: value })
                   }
-                >
-                  {FPS_OPTIONS.map((f) => (
-                    <option key={f.value} value={f.value}>
-                      {f.label}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  value={data.duration || 5}
-                  onChange={(e) =>
-                    updateNodeData(id, {
-                      duration: Number(e.target.value),
-                    })
-                  }
-                >
-                  {DURATION_OPTIONS.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  value={data.aspectRatio || "16:9"}
-                  onChange={(e) =>
-                    updateNodeData(id, {aspectRatio: e.target.value})
-                  }
-                >
-                  {ASPECT_RATIOS.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-
+                />
 
                 <button
                   className={`ml-auto px-4 py-1.5 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
