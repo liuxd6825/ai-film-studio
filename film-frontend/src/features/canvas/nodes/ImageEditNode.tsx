@@ -2,6 +2,10 @@ import { memo, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Eye, X, Download, Trash2, Image } from "lucide-react";
+import { ImageSettingCard } from "../components/ImageSettingCard";
+import { useCanvasStore } from "../stores/canvasStore";
+import { imageApi, type ImageAiModel } from "../../../api/imageApi";
+import { canvasTaskApi } from "../../../api/canvasTaskApi";
 import {
   ImageEditNodeData,
   ImageEditAIModel,
@@ -11,9 +15,6 @@ import {
   isImageEditNode,
   IMAGE_ASPECT_RATIOS,
 } from "../domain/canvasNodes";
-import { useCanvasStore } from "../stores/canvasStore";
-import { imageApi, type ImageAiModel } from "../../../api/imageApi";
-import { canvasTaskApi } from "../../../api/canvasTaskApi";
 import { ImageSelectorModal } from "../ui/ImageSelectorModal";
 import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
@@ -48,8 +49,7 @@ export const ImageEditNode = memo(function ImageEditNode({
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
-  const addDerivedExportNode = useCanvasStore((s) => s.addDerivedExportNode);
-  const addEdge = useCanvasStore((s) => s.addEdge);
+  
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const openImageViewer = useCanvasStore((s) => s.openImageViewer);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
@@ -84,12 +84,18 @@ export const ImageEditNode = memo(function ImageEditNode({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Element;
+      const isImageSettingClick =
+        target.closest?.("[data-image-setting-card]") ||
+        target.closest?.("[data-image-setting-trigger]") ||
+        target.closest?.("[data-image-setting-dropdown]");
       if (
         showFloatingPanel &&
+        !isImageSettingClick &&
         panelRef.current &&
         resultRef.current &&
-        !panelRef.current.contains(event.target as Node) &&
-        !resultRef.current.contains(event.target as Node)
+        !panelRef.current.contains(target) &&
+        !resultRef.current.contains(target)
       ) {
         setShowFloatingPanel(false);
       }
@@ -358,7 +364,7 @@ export const ImageEditNode = memo(function ImageEditNode({
       const requestData: Parameters<typeof imageApi.generate>[1] = {
         prompt: data.prompt,
         model: data.aiModel,
-        size: apiSize,
+        resolution: apiSize,
         aspectRatio,
         nodeId: id,
         canvasId: canvasId || "",
@@ -368,7 +374,7 @@ export const ImageEditNode = memo(function ImageEditNode({
         requestData.referenceImages = incomingImages.map((img) => img.imageUrl);
       }
 
-      const response = await imageApi.generate(
+      const task = await imageApi.generate(
         projectId || "default",
         requestData,
       );
@@ -377,40 +383,27 @@ export const ImageEditNode = memo(function ImageEditNode({
         projectId,
         canvasId,
         nodeId: id,
-        hasTaskId: !!response.taskId,
-        taskId: response.taskId,
+        hasTaskId: !!task.id,
+        taskId: task.id,
       });
 
-      if (response.taskId) {
+      if (task.id) {
         setTaskStatus("processing");
         updateNodeData(id, {
-          taskId: response.taskId,
+          taskId: task.id,
           taskStatus: "processing",
         });
-        startPolling(response.taskId);
+        startPolling(task.id);
       } else {
         setTaskStatus("completed");
         updateNodeData(id, {
-          imageUrl: response.imageUrl,
+          // imageUrl: id.imageUrl,
           taskStatus: "completed",
         });
-
-        const createdNodeId = addDerivedExportNode(
-          id,
-          response.imageUrl,
-          response.aspectRatio,
-          response.imageUrl,
-          {
-            defaultTitle: "AI 生成",
-            resultKind: "generic",
-          },
-        );
-
-        if (createdNodeId) {
-          addEdge(id, createdNodeId);
-        }
         setIsGenerating(false);
       }
+
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "生成失败");
       setTaskStatus("failed");
@@ -429,8 +422,6 @@ export const ImageEditNode = memo(function ImageEditNode({
     data.size,
     data.requestAspectRatio,
     id,
-    addDerivedExportNode,
-    addEdge,
     incomingImages,
     updateNodeData,
     startPolling,
@@ -578,7 +569,7 @@ export const ImageEditNode = memo(function ImageEditNode({
       >
         <div className="p-1.5 flex items-center justify-between">
           <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-            {data.displayName || "图片生成"}
+            {data.displayName || "图片"}
           </span>
           <div className="flex items-center gap-2">
             {(isGenerating ||
@@ -649,7 +640,7 @@ export const ImageEditNode = memo(function ImageEditNode({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-3">等待生成图片</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-3"></span>
             <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">点击编辑参数开始创作</span>
           </div>
         )}
@@ -745,35 +736,20 @@ export const ImageEditNode = memo(function ImageEditNode({
                 ))}
               </select>
 
-              <select
-                className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                value={data.size || "1024"}
-                onChange={(e) =>
+              <ImageSettingCard
+                aspectRatioValue={data.requestAspectRatio || "16:9"}
+                aspectRatioOptions={ASPECT_RATIOS}
+                onAspectRatioChange={(value) =>
+                  updateNodeData(id, { requestAspectRatio: value })
+                }
+                resolutionValue={data.size || "1024"}
+                resolutionOptions={IMAGE_SIZES}
+                onResolutionChange={(value) =>
                   updateNodeData(id, {
-                    size: e.target.value as "1024" | "2048" | "4096" | "8192",
+                    size: value as "1024" | "2048" | "4096" | "8192",
                   })
                 }
-              >
-                {IMAGE_SIZES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                value={data.requestAspectRatio || "16:9"}
-                onChange={(e) =>
-                  updateNodeData(id, { requestAspectRatio: e.target.value })
-                }
-              >
-                {ASPECT_RATIOS.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
+              />
 
               <button
                 className={`ml-auto px-4 py-1.5 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 ${

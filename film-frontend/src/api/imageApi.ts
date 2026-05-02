@@ -3,9 +3,7 @@ import { api } from "./client";
 export interface GenerateImageRequest {
   prompt: string;
   model?: string;
-  size?: "1K" | "2K" | "4K";
-  quality?: "standard" | "hd";
-  n?: number;
+  resolution?: "1K" | "2K" | "4K";
   referenceImages?: string[];
   aspectRatio?: string;
   canvasId?: string;
@@ -14,11 +12,6 @@ export interface GenerateImageRequest {
 
 export interface GenerateImageResponse {
   id: string;
-  taskId?: string;
-  imageUrl: string;
-  imageData?: string;
-  aspectRatio: string;
-  processingTimeMs: number;
   model: string;
   provider: string;
 }

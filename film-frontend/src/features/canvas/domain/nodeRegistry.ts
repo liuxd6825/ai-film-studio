@@ -46,8 +46,8 @@ export interface CanvasNodeDefinition<
 
 const DEFAULT_NODE_DISPLAY_NAME: Record<string, string> = {
   uploadNode: "图片",
-  imageNode: "图片生成",
-  videoGenNode: "视频生成",
+  imageNode: "图片",
+  videoGenNode: "视频",
   videoUploadNode: "视频",
   exportImageNode: "导出图片",
   textAnnotationNode: "文本标注",

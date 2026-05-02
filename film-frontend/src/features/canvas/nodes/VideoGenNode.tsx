@@ -118,8 +118,7 @@ export const VideoGenNode = memo(function VideoGenNode({
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
-  const addDerivedExportNode = useCanvasStore((s) => s.addDerivedExportNode);
-  const addEdge = useCanvasStore((s) => s.addEdge);
+  
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const openVideoViewer = useCanvasStore((s) => s.openVideoViewer);
   const addKeyframe = useCanvasStore((s) => s.addKeyframe);
@@ -492,21 +491,6 @@ export const VideoGenNode = memo(function VideoGenNode({
           previewVideoUrl: response.result_url,
         });
 
-        const createdNodeId = addDerivedExportNode(
-          id,
-          response.task_id,
-          data.aspectRatio,
-          response.result_url,
-          {
-            defaultTitle: "生成",
-            resultKind: "generic",
-          },
-        );
-
-        if (createdNodeId) {
-          addEdge(id, createdNodeId);
-        }
-
         setTaskStatus("processing");
         setTimeout(() => {
           setTaskStatus("completed");
@@ -533,8 +517,6 @@ export const VideoGenNode = memo(function VideoGenNode({
     data.aiModel,
     data.aspectRatio,
     id,
-    addDerivedExportNode,
-    addEdge,
     incomingImages,
     updateNodeData,
     startPolling,
@@ -718,7 +700,7 @@ export const VideoGenNode = memo(function VideoGenNode({
       >
         <div className="p-1.5 flex items-center justify-between">
           <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-            {data.displayName || "视频生成"}
+            {data.displayName || "视频"}
           </span>
           <div className="flex items-center gap-2">
             {(isGenerating ||
@@ -787,7 +769,7 @@ export const VideoGenNode = memo(function VideoGenNode({
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 dark:from-blue-900/40 to-purple-100 dark:to-purple-900/40 flex items-center justify-center">
                 <Film className="w-8 h-8 text-blue-500" />
               </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-3">等待生成视频</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-3"></span>
               <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">点击编辑参数开始创作</span>
             </div>
           )}
