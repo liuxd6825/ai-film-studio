@@ -2,6 +2,7 @@ package jimeng_web
 
 import (
 	"encoding/json"
+	"open-film-service/internal/ai/aioptions"
 	"time"
 )
 
@@ -41,14 +42,15 @@ func (w WorkType) String() string {
 }
 
 type GenerateRequest struct {
-	Prompt      string   `json:"prompt"`
-	Model       string   `json:"model"`
-	AspectRatio string   `json:"aspect_ratio"`
-	Seed        string   `json:"seed"`
-	WorkType    string   `json:"work_type"`
-	FilesUrl    []string `json:"files_url"`
-	Resolution  string   `json:"resolution"` // 分辨率
-	Workspace   string   `json:"workspace"`  // 工作区
+	Prompt      string             `json:"prompt"`
+	Model       string             `json:"model"`
+	AspectRatio string             `json:"aspect_ratio"`
+	Seed        string             `json:"seed"`
+	WorkType    string             `json:"work_type"`
+	FilesUrl    []string           `json:"files_url"`
+	Resolution  string             `json:"resolution"` // 分辨率
+	Workspace   string             `json:"workspace"`  // 工作区
+	TaskType    aioptions.TaskType `json:"taskType"`
 }
 
 type GenerateResponse struct {
@@ -95,4 +97,11 @@ const (
 	ModelType_Seedance2FastVIP ModelType = "seedance_2.0_fast_web_vip"
 	ModelType_Seedance2        ModelType = "seedance_2.0_web"
 	ModelType_Seedance2Fast    ModelType = "seedance_2.0_fast_web"
+)
+
+type TaskType string
+
+const (
+	TaskTypeImage TaskType = "image"
+	TaskTypeVideo TaskType = "video"
 )

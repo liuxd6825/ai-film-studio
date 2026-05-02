@@ -3,17 +3,37 @@ package aioptions
 import "time"
 
 type NewTaskOptions struct {
-	Provider      string           `json:"provider"`
-	Model         string           `json:"model"`
-	Prompt        string           `json:"prompt"`
-	GenerateAudio bool             `json:"generateAudio"`
-	VideoRatio    string           `json:"videoRatio"`
-	VideoDuration int              `json:"videoDuration"`
-	ShowWatermark bool             `json:"showWatermark"`
-	RefItems      []NewTaskRefItem `json:"refItems"`   // 引用项目
-	Resolution    string           `json:"resolution"` // 分辨率
-	Workspace     string           `json:"workspace"`  // 工作区
-	WorkType      string           `json:"workType"`
+	Model     string           `json:"model"`
+	Prompt    string           `json:"prompt"`
+	TaskType  TaskType         `json:"taskType"`  // 任务类型
+	RefItems  []NewTaskRefItem `json:"refItems"`  // 引用项目
+	Workspace string           `json:"workspace"` // 工作区
+
+	Image ImageOptions `json:"image"`
+	Video VideoOptions `json:"video"`
+}
+
+type Resolution string
+
+const (
+	Resolution2K Resolution = "2K"
+	Resolution4K Resolution = "4K"
+)
+
+func (w Resolution) String() string {
+	return string(w)
+}
+
+type ImageOptions struct {
+	AspectRatio string     `json:"aspectRatio"` // 屏幕高宽比
+	Resolution  Resolution `json:"resolution"`  // 分辨率 2K, 4K
+}
+
+type VideoOptions struct {
+	GenerateAudio bool       `json:"generateAudio"` // 生成声音
+	AspectRatio   string     `json:"aspectRatio"`   // 屏幕高宽比
+	Duration      int        `json:"duration"`      // 时长
+	Resolution    Resolution `json:"resolution"`    // 分辨率 2K, 4K
 }
 
 type ReferenceType string

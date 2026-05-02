@@ -16,30 +16,13 @@ var (
 	ErrGenerationFailed = errors.New("image generation failed")
 )
 
-type ImageSize string
-
-const (
-	Size1K ImageSize = "1K"
-	Size2K ImageSize = "2K"
-	Size4K ImageSize = "4K"
-	Size8K ImageSize = "8K"
-)
-
-func (s ImageSize) String() string {
-	return string(s)
-}
-
 type GenerationRequest struct {
-	Prompt          string    `json:"prompt"`
-	Model           string    `json:"model"`
-	Size            ImageSize `json:"size"`
-	Quality         string    `json:"quality,omitempty"`
-	N               int       `json:"n,omitempty"`
-	Provider        string    `json:"provider"`
-	APIKey          string    `json:"-"`
-	BaseURL         string    `json:"-"`
-	ReferenceImages []string  `json:"referenceImages,omitempty"`
-	AspectRatio     string    `json:"aspectRatio,omitempty"`
+	Prompt          string   `json:"prompt"`
+	Model           string   `json:"model"`
+	ReferenceImages []string `json:"referenceImages,omitempty"`
+	AspectRatio     string   `json:"aspectRatio,omitempty"`
+	Workspace       string   `json:"workspace"`
+	Resolution      string   `json:"resolution"`
 }
 
 type GenerationResult struct {
@@ -69,7 +52,24 @@ func NewService(config *config.Config, aiImageService *ai.AiImageService, canvas
 }
 
 func (s *Service) NewTask(ctx context.Context, request GenerationRequest) (task *aioptions.Task, err error) {
-	newTaskOptions := aioptions.NewTaskOptions{}
+	var refItems []aioptions.NewTaskRefItem
+	for _, imageUrl := range request.ReferenceImages {
+		refItems = append(refItems, aioptions.NewTaskRefItem{
+			Type: aioptions.TaskTypeImage,
+			Url:  imageUrl,
+		})
+	}
+	newTaskOptions := aioptions.NewTaskOptions{
+		Model:     request.Model,
+		Prompt:    request.Prompt,
+		RefItems:  refItems,
+		Workspace: request.Workspace,
+		TaskType:  aioptions.TaskTypeImage,
+		Image: aioptions.ImageOptions{
+			AspectRatio: request.AspectRatio,
+			Resolution:  aioptions.Resolution(request.Resolution),
+		},
+	}
 	return s.aiImageService.NewTask(ctx, newTaskOptions)
 }
 

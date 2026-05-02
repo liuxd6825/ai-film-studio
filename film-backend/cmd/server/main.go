@@ -249,7 +249,7 @@ func main() {
 	videoGenHandler := handler.NewAIVideoHandler(videoService, canvasTaskService)
 
 	imageService := ai_image.NewService(cfg, aiImageService, canvasTaskRepo)
-	imageHandler := handler.NewImageHandler(imageService, canvasTaskHandler)
+	imageHandler := handler.NewImageHandler(imageService, canvasTaskService)
 
 	migrateCanvasFiles(canvasFileService)
 

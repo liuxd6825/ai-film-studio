@@ -27,6 +27,11 @@ func NewImageService(baseURL string) *ImageService {
 }
 
 func (s *ImageService) NewTask(ctx context.Context, opts aioptions.NewTaskOptions) (task *aioptions.Task, err error) {
+	opts.TaskType = aioptions.TaskTypeImage
+	opts.Model, err = s.client.GetImageModel(opts.Model)
+	if err != nil {
+		return nil, err
+	}
 	return s.client.NewTask(ctx, opts)
 }
 

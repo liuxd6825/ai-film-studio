@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/ai/aiservice/image"
-	"open-film-service/internal/logging"
 	"time"
 )
 
@@ -43,22 +42,34 @@ func newVideoService(baseURL string) image.IImageService {
 
 func (s *JiMengClient) NewTask(ctx context.Context, opts aioptions.NewTaskOptions) (task *aioptions.Task, err error) {
 	req := GenerateRequest{
-		Prompt:     opts.Prompt,
-		Model:      opts.Model,
-		WorkType:   "video",
-		Resolution: opts.Resolution,
-		Workspace:  opts.Workspace,
+		Prompt:    opts.Prompt,
+		Model:     opts.Model,
+		WorkType:  WorkType_ALL.String(),
+		Workspace: opts.Workspace,
+		TaskType:  opts.TaskType,
 	}
+	if opts.TaskType == aioptions.TaskTypeVideo {
+		req.Seed = fmt.Sprintf("%d", opts.Video.Duration) + "s"
+		req.AspectRatio = opts.Video.AspectRatio
+		req.Resolution = opts.Video.Resolution.String()
+	} else if opts.TaskType == aioptions.TaskTypeImage {
+		req.Seed = "0s"
+		req.AspectRatio = opts.Image.AspectRatio
+		req.Resolution = opts.Image.Resolution.String()
+	}
+
+	// 引入的文件
 	var fileUrls []string
 	for _, i := range opts.RefItems {
 		fileUrls = append(fileUrls, i.Url)
 	}
 	req.FilesUrl = fileUrls
-	resp, err := s.Generate(ctx, req)
+
+	resp, err := s.generate(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	if resp.ErrorMessage != "" {
+	if resp.ErrorMessage != "" && resp.ErrorMessage != "生成中" {
 		return nil, errors.New(resp.ErrorMessage)
 	}
 	task = aioptions.NewTask(resp.TaskID, opts.Model, aioptions.TaskStatusPending)
@@ -79,7 +90,7 @@ const (
 	Seedance2Fast    = "jimeng-seedance2_fast"
 	Seedance2Vip     = "jimeng-seedance2_vip"
 	Seedance2        = "jimeng-seedance2"
-	Seedream5Lite    = "seedream_5.0_lite_web"
+	Seedream5Lite    = "jimeng-seedream_5.0_lite"
 )
 
 func (s *JiMengClient) GetVideoModels() []aioptions.Model {
@@ -117,43 +128,45 @@ func (s *JiMengClient) GetProvider() aioptions.Provider {
 	}
 }
 
-func (s *JiMengClient) Generate(ctx context.Context, req GenerateRequest) (resp *GenerateResponse, err error) {
-	req.WorkType = "全能参考"
-	genType := "video"
-	switch req.Model {
+func (s *JiMengClient) GetVideoModel(model string) (res string, err error) {
+	switch model {
 	case Seedance2FastVip:
-		req.Model = "Seedance 2.0 Fast VIP"
+		res = "Seedance 2.0 Fast VIP"
 	case Seedance2Vip:
-		req.Model = "Seedance 2.0 VIP"
+		res = "Seedance 2.0 VIP"
 	case Seedance2Fast:
-		req.Model = "Seedance 2.0 Fast"
+		res = "Seedance 2.0 Fast"
 	case Seedance2:
-		req.Model = "Seedance 2.0"
-	case Seedream5Lite:
-		genType = "image"
-		req.Model = "图片5.0 Lite"
-		if req.Resolution == "1K" {
-			req.Resolution = "2K"
-		} else if req.Resolution == "8K" {
-			req.Resolution = "4K"
-		}
+		res = "Seedance 2.0"
 	default:
-		err = errors.New("invalid model")
+		err = errors.New("invalid model " + model)
 	}
-
-	if err != nil {
-		logging.Error(err)
-	}
-	return s.generate(ctx, genType, req)
-
+	return res, err
 }
 
-func (s *JiMengClient) generate(ctx context.Context, genType string, req GenerateRequest) (*GenerateResponse, error) {
+func (s *JiMengClient) GetImageModel(model string) (res string, err error) {
+	switch model {
+	case Seedream5Lite:
+		res = "图片5.0 Lite"
+	default:
+		err = errors.New("invalid model" + model)
+	}
+	return res, err
+}
+
+func (s *JiMengClient) generate(ctx context.Context, req GenerateRequest) (*GenerateResponse, error) {
+	req.WorkType = "全能参考"
+
 	if req.Workspace == "" {
 		return nil, ErrMissingWorkspace
 	}
 	if req.Prompt == "" {
 		return nil, ErrMissingPrompt
+	}
+
+	genType := "video"
+	if req.TaskType == aioptions.TaskTypeImage {
+		genType = "image"
 	}
 
 	jsonBody, err := json.Marshal(req)

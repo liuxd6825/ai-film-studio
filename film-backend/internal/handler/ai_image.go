@@ -3,9 +3,11 @@ package handler
 import (
 	"context"
 	"errors"
+	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/model"
 	"open-film-service/internal/pkg/validator"
 	"open-film-service/internal/service/ai_image"
+	canvasTaskSvc "open-film-service/internal/service/canvas_task"
 	"strings"
 	"time"
 
@@ -14,7 +16,7 @@ import (
 
 type AIImageHandler struct {
 	imageSvc *ai_image.Service
-	taskSvc  *CanvasTaskHandler
+	taskSvc  *canvasTaskSvc.Service
 }
 
 type CanvasTaskStatus struct {
@@ -36,20 +38,21 @@ type CanvasTaskStatus struct {
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
-func NewImageHandler(svc *ai_image.Service, taskSvc *CanvasTaskHandler) *AIImageHandler {
+func NewImageHandler(svc *ai_image.Service, taskSvc *canvasTaskSvc.Service) *AIImageHandler {
 	return &AIImageHandler{imageSvc: svc, taskSvc: taskSvc}
 }
 
 type GenerateImageRequest struct {
-	CanvasID        string   `json:"canvasId,omitempty"`
-	NodeID          string   `json:"nodeId,omitempty"`
-	Prompt          string   `json:"prompt" validate:"required"`
-	Model           string   `json:"model"`
-	Size            string   `json:"size"`
-	Quality         string   `json:"quality,omitempty"`
-	N               int      `json:"n,omitempty"`
-	ReferenceImages []string `json:"referenceImages,omitempty"`
-	AspectRatio     string   `json:"aspectRatio,omitempty"`
+	CanvasID        string               `json:"canvasId,omitempty"`
+	NodeID          string               `json:"nodeId,omitempty"`
+	Prompt          string               `json:"prompt" validate:"required"`
+	Model           string               `json:"model"`
+	Resolution      aioptions.Resolution `json:"resolution"`
+	Quality         string               `json:"quality,omitempty"`
+	N               int                  `json:"n,omitempty"`
+	ReferenceImages []string             `json:"referenceImages,omitempty"`
+	AspectRatio     string               `json:"aspectRatio,omitempty"`
+	Workspace       string               `json:"workspace"`
 }
 
 func (h *AIImageHandler) Generate(ctx iris.Context) {
@@ -71,19 +74,17 @@ func (h *AIImageHandler) Generate(ctx iris.Context) {
 		}
 	}
 
-	size := ai_image.ImageSize(req.Size)
-	if size == "" {
-		size = ai_image.Size2K
+	if req.Workspace == "" {
+		req.Workspace = "12358121623308"
 	}
 
 	imageReq := ai_image.GenerationRequest{
 		Prompt:          req.Prompt,
 		Model:           req.Model,
-		Size:            size,
-		Quality:         req.Quality,
-		N:               req.N,
+		Resolution:      req.Resolution.String(),
 		ReferenceImages: req.ReferenceImages,
 		AspectRatio:     req.AspectRatio,
+		Workspace:       req.Workspace,
 	}
 
 	aiTask, err := h.imageSvc.NewTask(context.Background(), imageReq)
@@ -92,25 +93,31 @@ func (h *AIImageHandler) Generate(ctx iris.Context) {
 		return
 	}
 
-	response := model.CanvasTask{
-		ID:       aiTask.TaskId,
-		Model:    aiTask.Model,
-		Provider: aiTask.Provider,
+	var canvasTask *model.CanvasTask
+	canvasTask, err = h.taskSvc.CreateTask(
+		canvasTaskSvc.CreateTaskRequest{
+			TaskId:    aiTask.TaskId,
+			ProjectID: projectID,
+			CanvasID:  req.CanvasID,
+			NodeID:    req.NodeID,
+			Provider:  aiTask.Provider,
+			Model:     aiTask.Model,
+			Prompt:    req.Prompt,
+			TaskType:  aioptions.TaskTypeImage,
+			Workspace: req.Workspace,
+			Params: map[string]any{
+				"resolution":  req.Resolution.String(),
+				"quality":     req.Quality,
+				"aspectRatio": req.AspectRatio,
+			},
+		},
+	)
+	if err != nil {
+		validator.InternalServerError(ctx, err)
+		return
 	}
+	validator.Success(ctx, canvasTask)
 
-	if h.taskSvc != nil && req.NodeID != "" {
-		_, createErr := h.taskSvc.CreateTask(aiTask.TaskId, projectID, req.CanvasID, req.NodeID, aiTask.TaskType, aiTask.Provider, aiTask.Model, req.Prompt, map[string]any{
-			"size":        req.Size,
-			"quality":     req.Quality,
-			"aspectRatio": req.AspectRatio,
-		})
-		if createErr != nil {
-			validator.InternalServerError(ctx, createErr)
-			return
-		}
-	}
-
-	validator.Success(ctx, response)
 }
 
 func (h *AIImageHandler) GetTask(ctx iris.Context) {

@@ -143,7 +143,7 @@ class ApiService:
                 )
 
         asyncio.create_task(background_generate())
-        return Result(data={"result_id": request_id, "result": "生成中", "result_url": self._build_result_url(request_id)})
+        return Result(data={"result_id": request_id, "result": "", "result_url": self._build_result_url(request_id)})
 
     async def generate_image(self, session: AsyncSession, req) -> Result:
         errors = self._validate_image_params(
@@ -179,7 +179,7 @@ class ApiService:
                 )
 
         asyncio.create_task(background_generate())
-        return Result(data={"result_id": request_id, "result": "生成中", "result_url": self._build_result_url(request_id)})
+        return Result(data={"result_id": request_id, "result": "", "result_url": self._build_result_url(request_id)})
 
     async def generate_videos(self, session: AsyncSession, req) -> Result:
         all_errors = []

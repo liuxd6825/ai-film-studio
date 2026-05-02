@@ -61,13 +61,13 @@ func (s *VideoService) NewTask(ctx context.Context, opts aioptions.NewTaskOption
 
 	// Output video parameters
 	generateAudio := true
-	videoRatio := opts.VideoRatio // "16:9"
-	if opts.VideoRatio != "" {
-		videoRatio = opts.VideoRatio
+	videoRatio := opts.Video.AspectRatio // "16:9"
+	if videoRatio != "" {
+		videoRatio = "16:9"
 	}
 	videoDuration := int64(5)
-	if opts.VideoDuration != 0 {
-		videoDuration = int64(opts.VideoDuration)
+	if opts.Video.Duration != 0 {
+		videoDuration = int64(opts.Video.Duration)
 	}
 	showWatermark := true
 

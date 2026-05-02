@@ -53,7 +53,7 @@ func (s *ImageManage) GetTask(ctx context.Context, modelId, taskId string) (*aio
 
 func (s *ImageManage) getService(modelId string) (IImageService, error) {
 	service, ok := s.modelMap[modelId]
-	if ok {
+	if !ok {
 		return nil, errors.New("not found service id " + modelId)
 	}
 	return service, nil
