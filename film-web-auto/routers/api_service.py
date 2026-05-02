@@ -386,6 +386,7 @@ class ApiService:
                     results_with_workspace.append(f"{settings.DOWNLOAD_URL_PREFIX}/downloads/{system}/{workspace}/{filename}")
                 else:
                     results_with_workspace.append(None)
+            client_request.status = task.status
             task_list.append({
                 "id": task.id,
                 "workspace": workspace,
@@ -396,6 +397,7 @@ class ApiService:
                 "updated_at": task.updated_at.isoformat() if task.updated_at else None,
                 "file_urls": results_with_workspace
             })
+
 
         return Result(
             code=200,

@@ -101,7 +101,7 @@ func (h *AIImageHandler) Generate(ctx iris.Context) {
 			CanvasID:  req.CanvasID,
 			NodeID:    req.NodeID,
 			Provider:  aiTask.Provider,
-			Model:     aiTask.Model,
+			Model:     req.Model,
 			Prompt:    req.Prompt,
 			TaskType:  aioptions.TaskTypeImage,
 			Workspace: req.Workspace,

@@ -257,6 +257,8 @@ func (s *Service) PollTask(ctx context.Context, taskID string) (*model.CanvasTas
 	case aioptions.TaskStatusFailed:
 		err = s.FailTask(taskID, aiTask.ErrorMsg)
 		return task, err
+	case aioptions.TaskStatusPending:
+		return task, nil
 	default:
 		return task, errors.New("invalid task status")
 	}

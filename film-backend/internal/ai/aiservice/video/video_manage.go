@@ -54,7 +54,7 @@ func (s *VideoManage) GetTask(ctx context.Context, model, taskId string) (*aiopt
 
 func (s *VideoManage) getService(modelId string) (IVideoService, error) {
 	service, ok := s.modelMap[modelId]
-	if ok {
+	if !ok {
 		return nil, errors.New("not found service id " + modelId)
 	}
 	return service, nil

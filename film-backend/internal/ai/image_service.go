@@ -4,6 +4,7 @@ import (
 	"context"
 	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/ai/aiservice/image"
+	"open-film-service/internal/ai/aiservice/image/google_web"
 	"open-film-service/internal/ai/aiservice/image/jimeng"
 	"open-film-service/internal/config"
 )
@@ -14,8 +15,13 @@ type AiImageService struct {
 
 func NewAiImageService(cfg *config.ModelsConfig) *AiImageService {
 	manage := image.NewImageManage()
-	if provider, ok := cfg.GetProvider("jimeng"); ok {
-		manage.Register(jimeng.NewImageService(provider.BaseURL))
+	for _, provider := range cfg.Providers {
+		switch provider.DriverType {
+		case "google_web":
+			manage.Register(google_web.NewImageService(provider.BaseURL))
+		case "jimeng_web":
+			manage.Register(jimeng.NewImageService(provider.BaseURL))
+		}
 	}
 	service := &AiImageService{
 		manage: manage,

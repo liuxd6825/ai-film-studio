@@ -10,8 +10,8 @@ browser:
   headless: false
   timeout: 30000
   channel: "chrome"
-  width: 1080
-  height: 1080
+  width: 2000
+  height: 900
 
 task:
   timeout: 180000

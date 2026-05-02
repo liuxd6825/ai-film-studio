@@ -32,8 +32,8 @@ type AIGenerateVideoRequest struct {
 	Model          string   `json:"model"  validate:"required"`
 	AspectRatio    string   `json:"aspect_ratio,omitempty"  validate:"required"`
 	Duration       int      `json:"duration,omitempty"  validate:"required"`
-	FPS            int      `json:"fps,omitempty"  validate:"required"`
 	ReferenceFiles []string `json:"reference_files,omitempty"`
+	Workspace      string   `json:"workspace"`
 }
 
 type AIGenerateVideoResponse struct {
@@ -55,7 +55,9 @@ func (h *AIVideoHandler) Generate(ctx iris.Context) {
 		return
 	}
 
-	model := req.Model
+	if req.Workspace == "" {
+		req.Workspace = "12358121623308"
+	}
 
 	if len(req.ReferenceFiles) > 0 {
 		for i, fileUrl := range req.ReferenceFiles {
@@ -66,13 +68,22 @@ func (h *AIVideoHandler) Generate(ctx iris.Context) {
 	}
 
 	aiReq := aioptions.NewTaskOptions{
-		Prompt: req.Prompt,
-		Model:  model,
+		Prompt:    req.Prompt,
+		Model:     req.Model,
+		Workspace: req.Workspace,
+		TaskType:  aioptions.TaskTypeVideo,
+		Video: aioptions.VideoOptions{
+			Resolution:    "2K",
+			Duration:      req.Duration,
+			AspectRatio:   req.AspectRatio,
+			GenerateAudio: true,
+		},
 		//Duration:       req.Duration,
 		//Fps:            strconv.Itoa(req.FPS),
 		//ReferenceFiles: req.ReferenceFiles,
 		//AspectRatio:    req.AspectRatio,
 	}
+
 	aiTask, err := h.videoSvc.NewTask(ctx, aiReq)
 	if err != nil {
 		validator.InternalServerError(ctx, err)
@@ -87,15 +98,15 @@ func (h *AIVideoHandler) Generate(ctx iris.Context) {
 			NodeID:    req.NodeID,
 			TaskType:  aioptions.TaskTypeVideo,
 			Provider:  aiTask.Provider,
-			Model:     model,
+			Model:     req.Model,
 			Prompt:    req.Prompt,
 			Params: map[string]interface{}{
 				"prompt":         req.Prompt,
-				"model":          model,
+				"model":          req.Model,
 				"duration":       req.Duration,
-				"fps":            req.FPS,
 				"referenceFiles": req.ReferenceFiles,
 				"aspectRatio":    req.AspectRatio,
+				"workspace":      req.Workspace,
 			},
 		}
 		task, createErr := h.taskSvc.CreateTask(createTaskRequest)

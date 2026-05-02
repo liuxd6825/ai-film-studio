@@ -1,4 +1,4 @@
-package jimeng_web
+package google_web
 
 import (
 	"bytes"
@@ -20,36 +20,31 @@ var (
 )
 
 const (
-	ProviderId    = "jimeng"
-	ProviderTitle = "即梦"
+	ProviderId    = "google_web"
+	ProviderTitle = "Google"
 )
 
 const (
-	Seedance2FastVip = "jimeng-seedance2_fast_vip"
-	Seedance2Fast    = "jimeng-seedance2_fast"
-	Seedance2Vip     = "jimeng-seedance2_vip"
-	Seedance2        = "jimeng-seedance2"
-	Seedream5Lite    = "jimeng-seedream_5.0_lite"
-	Seedream47       = "jimeng-seedream_4.7"
+	GoogleWebNanoBanana2 = "google_web-nano_banana"
 )
 
-type JiMengClient struct {
+type GoogleWebClient struct {
 	baseURL    string
 	httpClient *http.Client
 }
 
-func NewJimengClient(baseURL string) *JiMengClient {
-	return &JiMengClient{
+func NewGoogleWebClient(baseURL string) *GoogleWebClient {
+	return &GoogleWebClient{
 		baseURL:    baseURL,
 		httpClient: &http.Client{Timeout: 120 * time.Second},
 	}
 }
 
 func newVideoService(baseURL string) image.IImageService {
-	return NewJimengClient(baseURL)
+	return NewGoogleWebClient(baseURL)
 }
 
-func (s *JiMengClient) NewTask(ctx context.Context, opts aioptions.NewTaskOptions) (task *aioptions.Task, err error) {
+func (s *GoogleWebClient) NewTask(ctx context.Context, opts aioptions.NewTaskOptions) (task *aioptions.Task, err error) {
 	req := GenerateRequest{
 		Prompt:    opts.Prompt,
 		Model:     opts.Model,
@@ -65,8 +60,6 @@ func (s *JiMengClient) NewTask(ctx context.Context, opts aioptions.NewTaskOption
 		req.Seed = "0s"
 		req.AspectRatio = opts.Image.AspectRatio
 		req.Resolution = opts.Image.Resolution.String()
-	} else if opts.TaskType == "" {
-		return nil, errors.New("invalid task type")
 	}
 
 	// 引入的文件
@@ -87,83 +80,54 @@ func (s *JiMengClient) NewTask(ctx context.Context, opts aioptions.NewTaskOption
 	return task, nil
 }
 
-func (s *JiMengClient) GetImageModels() []aioptions.Model {
+func (s *GoogleWebClient) GetImageModels() []aioptions.Model {
 	return []aioptions.Model{
 		{
-			Id:    "jimeng-seedream_5.0_lite",
-			Title: "即梦网 5.0 Lite",
-		},
-		{
-			Id:    "jimeng-seedream_4.7",
-			Title: "即梦网 4.7",
+			Id:    GoogleWebNanoBanana2,
+			Title: "谷歌网",
 		},
 	}
 }
 
-func (s *JiMengClient) GetVideoModels() []aioptions.Model {
+func (s *GoogleWebClient) GetVideoModels() []aioptions.Model {
 	return []aioptions.Model{
-		{
-			Id:    Seedance2FastVip,
-			Title: "即梦网 SD2.0 Fast VIP",
-		},
-		{
-			Id:    Seedance2Vip,
-			Title: "即梦网 SD2.0 VIP",
-		},
-		{
-			Id:    Seedance2Fast,
-			Title: "即梦网 SD2.0 Fast",
-		},
-		{
-			Id:    Seedance2,
-			Title: "即梦网 SD2.0",
-		},
+		{},
 	}
 }
 
-func (s *JiMengClient) GetModels() []aioptions.Model {
+func (s *GoogleWebClient) GetModels() []aioptions.Model {
 	videoModels := s.GetVideoModels()
 	imageModels := s.GetImageModels()
 	videoModels = append(videoModels, imageModels...)
 	return videoModels
 }
 
-func (s *JiMengClient) GetProvider() aioptions.Provider {
+func (s *GoogleWebClient) GetProvider() aioptions.Provider {
 	return aioptions.Provider{
 		Id:    ProviderId,
 		Title: ProviderTitle,
 	}
 }
 
-func (s *JiMengClient) GetVideoModel(model string) (res string, err error) {
+func (s *GoogleWebClient) GetVideoModel(model string) (res string, err error) {
 	switch model {
-	case Seedance2FastVip:
-		res = "Seedance 2.0 Fast VIP"
-	case Seedance2Vip:
-		res = "Seedance 2.0 VIP"
-	case Seedance2Fast:
-		res = "Seedance 2.0 Fast"
-	case Seedance2:
-		res = "Seedance 2.0"
 	default:
 		err = errors.New("invalid model " + model)
 	}
 	return res, err
 }
 
-func (s *JiMengClient) GetImageModel(model string) (res string, err error) {
+func (s *GoogleWebClient) GetImageModel(model string) (res string, err error) {
 	switch model {
-	case Seedream47:
-		res = "图片4.7"
-	case Seedream5Lite:
-		res = "图片5.0 Lite"
+	case GoogleWebNanoBanana2:
+		res = "google"
 	default:
 		err = errors.New("invalid model" + model)
 	}
 	return res, err
 }
 
-func (s *JiMengClient) generate(ctx context.Context, req GenerateRequest) (*GenerateResponse, error) {
+func (s *GoogleWebClient) generate(ctx context.Context, req GenerateRequest) (*GenerateResponse, error) {
 	req.WorkType = "全能参考"
 
 	if req.Workspace == "" {
@@ -172,7 +136,7 @@ func (s *JiMengClient) generate(ctx context.Context, req GenerateRequest) (*Gene
 	if req.Prompt == "" {
 		return nil, ErrMissingPrompt
 	}
-
+	req.Model = "制作图片"
 	genType := "video"
 	if req.TaskType == aioptions.TaskTypeImage {
 		genType = "image"
@@ -183,7 +147,7 @@ func (s *JiMengClient) generate(ctx context.Context, req GenerateRequest) (*Gene
 		return nil, fmt.Errorf("%w: %v", ErrGenerationFailed, err)
 	}
 
-	url := fmt.Sprintf("%s/api/v1/%s/generate", s.baseURL, genType)
+	url := fmt.Sprintf("%s/api/v1/gemini/%s/generate", s.baseURL, genType)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrGenerationFailed, err)
@@ -218,7 +182,7 @@ func (s *JiMengClient) generate(ctx context.Context, req GenerateRequest) (*Gene
 	return &result, nil
 }
 
-func (s *JiMengClient) GetTask(ctx context.Context, model, taskID string) (*aioptions.Task, error) {
+func (s *GoogleWebClient) GetTask(ctx context.Context, model, taskID string) (*aioptions.Task, error) {
 	res, err := s.getRequestResult(ctx, taskID)
 	if err != nil {
 		return nil, err
@@ -251,7 +215,7 @@ func (s *JiMengClient) GetTask(ctx context.Context, model, taskID string) (*aiop
 	return result, nil
 }
 
-func (s *JiMengClient) getRequest(ctx context.Context, taskID string) (*GetRequestResult, error) {
+func (s *GoogleWebClient) getRequest(ctx context.Context, taskID string) (*GetRequestResult, error) {
 	if taskID == "" {
 		return nil, fmt.Errorf("request_id is required")
 	}
@@ -289,7 +253,7 @@ func (s *JiMengClient) getRequest(ctx context.Context, taskID string) (*GetReque
 	return &result, nil
 }
 
-func (s *JiMengClient) getRequestResult(ctx context.Context, taskID string) (*RequestResultResponse, error) {
+func (s *GoogleWebClient) getRequestResult(ctx context.Context, taskID string) (*RequestResultResponse, error) {
 	if taskID == "" {
 		return nil, fmt.Errorf("request_id is required")
 	}

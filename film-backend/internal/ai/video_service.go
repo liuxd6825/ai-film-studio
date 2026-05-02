@@ -15,15 +15,14 @@ type AiVideoService struct {
 
 func NewAiVideoService(cfg *config.ModelsConfig) *AiVideoService {
 	manage := video.NewVideoManage()
-	if provider, ok := cfg.GetProvider("jimeng"); ok {
-		manage.Register(jimeng.NewVideoService(provider.BaseURL))
+	for _, provider := range cfg.Providers {
+		switch provider.DriverType {
+		case "volces":
+			manage.Register(volcengine.NewVideoService(provider.APIKey, provider.BaseURL))
+		case "jimeng_web":
+			manage.Register(jimeng.NewVideoService(provider.BaseURL))
+		}
 	}
-
-	if provider, ok := cfg.GetProvider("volces"); ok {
-		service := volcengine.NewVideoService(provider.APIKey, provider.BaseURL)
-		manage.Register(service)
-	}
-
 	service := &AiVideoService{
 		manage: manage,
 	}
