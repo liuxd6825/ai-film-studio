@@ -1,7 +1,7 @@
 import { memo, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { Eye, X, Play, Film, Download, Trash2, Image } from "lucide-react";
+import { Eye, X, Play, Film, Download, Trash2, Image, Upload, RefreshCw } from "lucide-react";
 import {
   VideoGenNodeData,
   VideoResolution,
@@ -13,6 +13,7 @@ import {
 import { useCanvasStore } from "../stores/canvasStore";
 import { videoApi, type GenerateVideoRequest, type VideoAiModel } from "../../../api/videoApi";
 import { canvasTaskApi } from "../../../api/canvasTaskApi";
+import { canvasFileApi } from "../../../api/canvasFileApi";
 import { VideoSelectorModal } from "../ui/VideoSelectorModal";
 import { KeyframeModal } from "../ui/KeyframeModal";
 import { downloadUrl } from "../domain/downloadUtils";
@@ -128,6 +129,11 @@ export const VideoGenNode = memo(function VideoGenNode({
   const [availableAIModels, setAvailableAIModels] = useState<VideoAiModel[]>([]);
   const [taskStatus, setTaskStatus] = useState(data.taskStatus || "idle");
   const [taskProgress, setTaskProgress] = useState(data.taskProgress || 0);
+
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const effectiveMode = data.mode || 'prompt';
 
   const panelRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -293,6 +299,86 @@ export const VideoGenNode = memo(function VideoGenNode({
     [deleteEdge],
   );
 
+  const handleFile = useCallback(
+    async (file: File) => {
+      if (!file.type.startsWith("video/")) return;
+
+      if (!projectId || !canvasId) {
+        console.error("Missing projectId or canvasId");
+        return;
+      }
+
+      setIsUploading(true);
+      try {
+        const response = await canvasFileApi.upload(
+          projectId,
+          canvasId,
+          id,
+          file,
+        );
+        updateNodeData(id, {
+          videoUrl: response.downloadUrl,
+          previewVideoUrl: response.downloadUrl,
+          sourceFileName: file.name,
+          sourceType: 'upload',
+          mode: 'upload',
+        });
+      } catch (error) {
+        console.error("Failed to upload file:", error);
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [id, projectId, canvasId, updateNodeData],
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    },
+    [handleFile],
+  );
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const items = e.clipboardData.items;
+      for (const item of items) {
+        if (item.type.startsWith("video/")) {
+          const file = item.getAsFile();
+          if (file) {
+            handleFile(file);
+          }
+        }
+      }
+    },
+    [handleFile],
+  );
+
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleFile(files[0]);
+      }
+    },
+    [handleFile],
+  );
+
   const handlePreviewImage = useCallback(
     (imageUrl: string) => {
       openVideoViewer(imageUrl);
@@ -447,6 +533,10 @@ export const VideoGenNode = memo(function VideoGenNode({
       return;
     }
 
+    if (effectiveMode === 'undecided') {
+      updateNodeData(id, { mode: 'prompt', sourceType: 'generated' });
+    }
+
     console.log("[VideoGenNode] handleGenerate: setting isGenerating=true");
     setIsGenerating(true);
     setError(null);
@@ -580,10 +670,6 @@ export const VideoGenNode = memo(function VideoGenNode({
     }
   }, [projectId, data.taskId, isGenerating, updateNodeData, id]);
 
-  const handleResultClick = useCallback(() => {
-    setShowFloatingPanel((prev) => !prev);
-  }, []);
-
   const handlePlayVideo = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (videoRef.current) {
@@ -637,18 +723,53 @@ export const VideoGenNode = memo(function VideoGenNode({
   return (
     <>
       <style>{pulseGlowStyles}</style>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={handleFileInput}
+      />
       <NodeToolbar nodeId={id} visible={selected}>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowVideoSelector(true);
-          }}
-          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-          title="选择"
-        >
-          <Image className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-        </button>
+        {effectiveMode === 'undecided' && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            title="上传"
+          >
+            <Upload className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          </button>
+        )}
+        {effectiveMode === 'upload' && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            title="替换"
+          >
+            <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          </button>
+        )}
+        {effectiveMode === 'prompt' && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowVideoSelector(true);
+            }}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            title="选择"
+          >
+            <Image className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          </button>
+        )}
         <button
           type="button"
           onClick={(e) => {
@@ -744,7 +865,11 @@ export const VideoGenNode = memo(function VideoGenNode({
           className={`relative h-40 p-1.5 cursor-pointer ${
             isGenerating || taskStatus === "pending" || taskStatus === "processing" ? "preview-glow" : ""
           }`}
-          onClick={handleResultClick}
+          onClick={() => setShowFloatingPanel(true)}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onPaste={handlePaste}
         >
           {data.videoUrl ? (
             <div className="h-full relative rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 dark:from-gray-700 to-gray-200 dark:to-gray-600">
@@ -773,12 +898,12 @@ export const VideoGenNode = memo(function VideoGenNode({
                 <Film className="w-8 h-8 text-blue-500" />
               </div>
               <span className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-3"></span>
-              <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">点击编辑参数开始创作</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">点击打开创作面板</span>
             </div>
           )}
         </div>
 
-        {showFloatingPanel && (
+        {(effectiveMode === 'undecided' || effectiveMode === 'prompt') && showFloatingPanel && (
           <div
             ref={panelRef}
             className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[600px] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl z-50"

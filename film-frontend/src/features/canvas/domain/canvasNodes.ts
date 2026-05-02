@@ -214,6 +214,9 @@ export interface VideoGenNodeData extends NodeDisplayData {
   videoUrl?: string | null;
   previewVideoUrl?: string | null;
   keyframes?: Keyframe[];
+  mode?: 'undecided' | 'upload' | 'prompt';
+  sourceType?: 'upload' | 'generated' | 'reference';
+  sourceFileName?: string | null;
 }
 
 export interface TextNodeData extends NodeDisplayData {

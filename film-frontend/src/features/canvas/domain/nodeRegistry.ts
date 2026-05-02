@@ -301,6 +301,7 @@ const videoGenNodeDefinition: CanvasNodeDefinition<VideoGenNodeData> = {
     previewVideoUrl: null,
     taskStatus: "idle",
     taskProgress: 0,
+    mode: 'undecided',
   }),
 };
 
