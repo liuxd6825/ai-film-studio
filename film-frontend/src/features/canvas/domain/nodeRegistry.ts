@@ -62,7 +62,7 @@ const uploadNodeDefinition: CanvasNodeDefinition<UploadImageNodeData> = {
   type: CANVAS_NODE_TYPES.upload,
   menuLabelKey: "node.menu.uploadImage",
   menuIcon: "upload",
-  visibleInMenu: true,
+  visibleInMenu: false,
   capabilities: {
     toolbar: true,
     promptInput: false,
@@ -117,6 +117,7 @@ const imageEditNodeDefinition: CanvasNodeDefinition<ImageEditNodeData> = {
     isGenerating: false,
     generationStartedAt: null,
     generationDurationMs: 60000,
+    mode: 'undecided' as const,
   }),
 };
 
@@ -307,7 +308,7 @@ const videoUploadNodeDefinition: CanvasNodeDefinition<VideoUploadNodeData> = {
   type: CANVAS_NODE_TYPES.videoUpload,
   menuLabelKey: "node.menu.videoUpload",
   menuIcon: "upload",
-  visibleInMenu: true,
+  visibleInMenu: false,
   capabilities: {
     toolbar: true,
     promptInput: false,
@@ -357,6 +358,7 @@ export const canvasNodeDefinitions: Record<
   CanvasNodeType,
   CanvasNodeDefinition
 > = {
+  [CANVAS_NODE_TYPES.text]: textNodeDefinition,
   [CANVAS_NODE_TYPES.upload]: uploadNodeDefinition,
   [CANVAS_NODE_TYPES.videoUpload]: videoUploadNodeDefinition,
   [CANVAS_NODE_TYPES.imageEdit]: imageEditNodeDefinition,
@@ -366,7 +368,7 @@ export const canvasNodeDefinitions: Record<
   [CANVAS_NODE_TYPES.group]: groupNodeDefinition,
   [CANVAS_NODE_TYPES.storyboardSplit]: storyboardSplitDefinition,
   [CANVAS_NODE_TYPES.storyboardGen]: storyboardGenNodeDefinition,
-  [CANVAS_NODE_TYPES.text]: textNodeDefinition,
+
 
 
 };

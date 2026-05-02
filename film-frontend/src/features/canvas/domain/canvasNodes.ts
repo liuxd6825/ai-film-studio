@@ -122,6 +122,9 @@ export interface ImageEditNodeData extends NodeImageData {
   taskStatus?: ImageEditTaskStatus;
   taskProgress?: number;
   errorMessage?: string;
+  mode?: 'undecided' | 'upload' | 'prompt';
+  sourceType?: 'upload' | 'generated' | 'reference';
+  sourceFileName?: string | null;
 }
 
 export interface StoryboardFrameItem {

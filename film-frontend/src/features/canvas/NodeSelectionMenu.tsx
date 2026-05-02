@@ -98,14 +98,14 @@ export function NodeSelectionMenu({
 
   const getLabel = (def: { menuLabelKey: string }) => {
     const labels: Record<string, string> = {
-      "node.menu.uploadImage": "导入图片",
-      "node.menu.videoUpload": "导入视频",
-      "node.menu.aiImageGeneration": "图片生成",
-      "node.menu.videoGen": "视频生成",
-      "node.menu.storyboard": "故事板",
-      "node.menu.textAnnotation": "文本标注",
-      "node.menu.storyboardGen": "故事板生成",
+     // "node.menu.uploadImage": "导入图片",
+     // "node.menu.videoUpload": "导入视频",
       "node.menu.text": "文本",
+      "node.menu.aiImageGeneration": "图片",
+      "node.menu.videoGen": "视频",
+      "node.menu.storyboard": "故事板",
+      "node.menu.textAnnotation": "备注",
+      "node.menu.storyboardGen": "故事板",
     };
     return labels[def.menuLabelKey] || def.menuLabelKey;
   };

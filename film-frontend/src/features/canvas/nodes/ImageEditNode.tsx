@@ -1,11 +1,12 @@
 import { memo, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { Eye, X, Download, Trash2, Image } from "lucide-react";
+import { Eye, X, Download, Trash2, Image, Upload, RefreshCw } from "lucide-react";
 import { ImageSettingCard } from "../components/ImageSettingCard";
 import { useCanvasStore } from "../stores/canvasStore";
 import { imageApi, type ImageAiModel } from "../../../api/imageApi";
 import { canvasTaskApi } from "../../../api/canvasTaskApi";
+import { canvasFileApi } from "../../../api/canvasFileApi";
 import {
   ImageEditNodeData,
   ImageEditAIModel,
@@ -66,6 +67,11 @@ export const ImageEditNode = memo(function ImageEditNode({
   const [taskProgress, setTaskProgress] = useState(data.taskProgress || 0);
   const [nodeFileCount, setNodeFileCount] = useState(0);
 
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const effectiveMode = data.mode || 'prompt';
+
   const panelRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
@@ -73,6 +79,86 @@ export const ImageEditNode = memo(function ImageEditNode({
   );
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const isComposingRef = useRef(false);
+
+const handleFile = useCallback(
+    async (file: File) => {
+      if (!file.type.startsWith("image/")) return;
+
+      if (!projectId || !canvasId) {
+        console.error("Missing projectId or canvasId");
+        return;
+      }
+
+      setIsUploading(true);
+      try {
+        const response = await canvasFileApi.upload(
+          projectId,
+          canvasId,
+          id,
+          file,
+        );
+        updateNodeData(id, {
+          imageUrl: response.downloadUrl,
+          previewImageUrl: response.downloadUrl,
+          sourceFileName: file.name,
+          sourceType: 'upload',
+          mode: 'upload',
+        });
+      } catch (error) {
+        console.error("Failed to upload file:", error);
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [id, projectId, canvasId, updateNodeData],
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    },
+    [handleFile],
+  );
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const items = e.clipboardData.items;
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            handleFile(file);
+          }
+        }
+      }
+    },
+    [handleFile],
+  );
+
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleFile(files[0]);
+      }
+    },
+    [handleFile],
+  );
 
   useEffect(() => {
     if (selected) {
@@ -483,10 +569,6 @@ export const ImageEditNode = memo(function ImageEditNode({
     }
   }, [projectId, data.taskId, isGenerating, updateNodeData, id]);
 
-  const handleResultClick = useCallback(() => {
-    setShowFloatingPanel((prev) => !prev);
-  }, []);
-
   const handleClosePanel = useCallback(() => {
     setShowFloatingPanel(false);
   }, []);
@@ -516,17 +598,45 @@ export const ImageEditNode = memo(function ImageEditNode({
   return (
     <>
       <NodeToolbar nodeId={id} visible={selected}>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowImageSelector(true);
-          }}
-          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-          title="选择"
-        >
-          <Image className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-        </button>
+        {effectiveMode === 'undecided' && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            title="上传"
+          >
+            <Upload className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          </button>
+        )}
+        {effectiveMode === 'upload' && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            title="替换"
+          >
+            <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          </button>
+        )}
+        {effectiveMode === 'prompt' && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowImageSelector(true);
+            }}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            title="选择"
+          >
+            <Image className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          </button>
+        )}
         <button
           type="button"
           onClick={(e) => {
@@ -563,10 +673,21 @@ export const ImageEditNode = memo(function ImageEditNode({
           <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
         </button>
       </NodeToolbar>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileInput}
+      />
       <div
         className={`min-w-[200px] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${
           selected ? "border-2 border-blue-500" : ""
         } shadow-md relative group`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onPaste={handlePaste}
       >
         <div className="p-1.5 flex items-center justify-between">
           <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
@@ -609,17 +730,17 @@ export const ImageEditNode = memo(function ImageEditNode({
       <div
         ref={resultRef}
         className="h-40 p-1.5 cursor-pointer"
-        onClick={handleResultClick}
+        onClick={() => setShowFloatingPanel(true)}
       >
         {data.imageUrl ? (
           imageLoadError ? (
             <div className="h-full flex flex-col items-center justify-center rounded-lg bg-gradient-to-br from-red-50 dark:from-red-900/20 to-red-100 dark:to-red-900/30">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-100 dark:from-red-900/40 to-red-200 dark:to-red-900/50 flex items-center justify-center">
-                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-100 dark:from-red-900/40 to-red-200 dark:to-red-900/50 flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <span className="text-sm text-red-600 dark:text-red-400 font-medium mt-3">图片加载失败</span>
+              <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-2">图片加载失败</span>
             </div>
           ) : (
             <div className="h-full relative rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 dark:from-gray-700 to-gray-200 dark:to-gray-600">
@@ -629,11 +750,17 @@ export const ImageEditNode = memo(function ImageEditNode({
                 className="w-full h-full object-contain"
                 onError={() => setImageLoadError(true)}
               />
-              <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                <Eye className="w-8 h-8 text-white drop-shadow-lg" />
-              </div>
             </div>
           )
+        ) : isUploading ? (
+          <div className="h-full flex flex-col items-center justify-center rounded-lg bg-gradient-to-br from-blue-50 dark:from-blue-900/20 to-blue-100 dark:to-blue-900/30">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 dark:from-blue-900/40 to-blue-200 dark:to-blue-900/50 flex items-center justify-center animate-pulse">
+              <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+            </div>
+            <span className="text-sm text-blue-600 dark:text-blue-400 font-medium mt-2">上传中...</span>
+          </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center rounded-lg bg-gradient-to-br from-gray-50 dark:from-gray-700 to-gray-100 dark:to-gray-600">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 dark:from-blue-900/40 to-purple-100 dark:from-purple-900/40 flex items-center justify-center">
@@ -641,8 +768,7 @@ export const ImageEditNode = memo(function ImageEditNode({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-3"></span>
-            <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">点击编辑参数开始创作</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-3">点击打开创作面板</span>
           </div>
         )}
 
@@ -659,7 +785,7 @@ export const ImageEditNode = memo(function ImageEditNode({
         )}
       </div>
 
-      {showFloatingPanel && (
+      {(effectiveMode === 'prompt' || effectiveMode === 'undecided') && showFloatingPanel && (
         <div
           ref={panelRef}
           className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[600px] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl z-50"
@@ -787,7 +913,7 @@ export const ImageEditNode = memo(function ImageEditNode({
         id="source"
         className="w-3 h-3"
       />
-      {showImageSelector && projectId && (
+      {(effectiveMode === 'upload' || effectiveMode === 'prompt') && showImageSelector && projectId && (
         <ImageSelectorModal
           projectId={projectId}
           nodeId={id}
