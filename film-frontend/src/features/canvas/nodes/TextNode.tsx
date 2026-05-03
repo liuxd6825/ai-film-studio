@@ -190,6 +190,16 @@ export const TextNode = memo(function TextNode({
     [id, updateNodeData],
   );
 
+  const handlePromptCompositionEnd = useCallback(
+    (e: React.CompositionEvent<HTMLTextAreaElement>) => {
+      isComposingRef.current = false;
+      updateNodeData(id, { prompt: e.currentTarget.value });
+      e.currentTarget.style.height = "auto";
+      e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+    },
+    [id, updateNodeData],
+  );
+
   const handlePromptChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       if (isComposingRef.current) {
@@ -488,7 +498,7 @@ export const TextNode = memo(function TextNode({
                   placeholder="描述你想要生成的内容..."
                   defaultValue={data.prompt || ""}
                   onCompositionStart={handleCompositionStart}
-                  onCompositionEnd={handleCompositionEnd}
+                  onCompositionEnd={handlePromptCompositionEnd}
                   onChange={handlePromptChange}
                   style={{
                     height: data.prompt ? "auto" : "80px",
