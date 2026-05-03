@@ -63,6 +63,9 @@ export function Canvas() {
   const interactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef<{ x: number; y: number } | null>(null);
+  const viewportStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const {
     nodes,
@@ -233,6 +236,15 @@ export function Canvas() {
           pointerDownPosRef.current = null;
         }, 100);
       }
+
+      if (e.metaKey && !e.button && e.button === 0) {
+        isPanningRef.current = true;
+        panStartRef.current = { x: e.clientX, y: e.clientY };
+        viewportStartRef.current = { x: reactFlowInstance.getViewport().x, y: reactFlowInstance.getViewport().y };
+        if (containerRef.current) {
+          containerRef.current.style.cursor = 'grab';
+        }
+      }
     }
 
     function handlePointerMove(e: PointerEvent) {
@@ -248,6 +260,19 @@ export function Canvas() {
           setInteractingWithInput(false);
         }
       }
+
+      if (isPanningRef.current && panStartRef.current && viewportStartRef.current) {
+        const dx = e.clientX - panStartRef.current.x;
+        const dy = e.clientY - panStartRef.current.y;
+        reactFlowInstance.setViewport({
+          x: viewportStartRef.current.x + dx,
+          y: viewportStartRef.current.y + dy,
+          zoom: reactFlowInstance.getViewport().zoom,
+        });
+        if (containerRef.current) {
+          containerRef.current.style.cursor = 'grabbing';
+        }
+      }
     }
 
     function handlePointerUp() {
@@ -257,6 +282,12 @@ export function Canvas() {
       }
       pointerDownPosRef.current = null;
       setInteractingWithInput(false);
+      isPanningRef.current = false;
+      panStartRef.current = null;
+      viewportStartRef.current = null;
+      if (containerRef.current) {
+        containerRef.current.style.cursor = '';
+      }
     }
 
     document.addEventListener("pointerdown", handlePointerDown);
@@ -267,7 +298,7 @@ export function Canvas() {
       document.removeEventListener("pointermove", handlePointerMove);
       document.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [setInteractingWithInput]);
+  }, [reactFlowInstance, setInteractingWithInput]);
 
   const persistCanvasSnapshot = useCallback(() => {
     if (!currentProjectId || !canvasIdFromUrl) return;
@@ -605,15 +636,16 @@ export function Canvas() {
         defaultViewport={currentViewport}
         minZoom={0.1}
         maxZoom={5}
-        selectionOnDrag={!isLocked && !isImageSelectorOpen}
+        selectionOnDrag={false}
         selectionMode={SelectionMode.Partial}
         multiSelectionKeyCode={["Control", "Meta"]}
+        zoomOnScroll={false}
         zoomOnDoubleClick={false}
         fitView={nodes.length === 0}
         deleteKeyCode={isLocked || isImageSelectorOpen ? null : "Delete"}
         nodesDraggable={!isLocked && !isImageSelectorOpen}
         nodesConnectable={!isLocked && !isImageSelectorOpen}
-        panOnDrag={!isImageSelectorOpen}
+        panOnDrag={false}
         elementsSelectable={!isLocked && !isImageSelectorOpen}
         colorMode={isDark ? "dark" : "light"}
       >

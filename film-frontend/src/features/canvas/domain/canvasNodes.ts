@@ -223,6 +223,8 @@ export interface TextNodeData extends NodeDisplayData {
   content: string;
   prompt: string;
   aiModel?: string;
+  width?: number;
+  height?: number;
 }
 
 export type CanvasNodeData =

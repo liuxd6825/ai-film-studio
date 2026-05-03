@@ -1,6 +1,6 @@
 import { memo, useState, useCallback, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react";
 import { Trash2, Type, Sparkles, Image, Video, Volume } from "lucide-react";
 import {
   TextNodeData,
@@ -58,6 +58,28 @@ const pulseGlowStyles = `
     box-shadow: 0 0 20px 5px rgba(139, 92, 246, 0.3);
     border: 2px solid rgba(139, 92, 246, 0.4);
   }
+}
+
+.react-flow__resize-control.handle {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.react-flow__resize-control.handle.bottom.right {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 12px !important;
+  height: 12px !important;
+  background: #3b82f6 !important;
+  border-radius: 2px !important;
+  right: -6px !important;
+  bottom: -6px !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__resize-control.line {
+  opacity: 0 !important;
 }
 `;
 
@@ -214,6 +236,13 @@ export const TextNode = memo(function TextNode({
     deleteNode(id);
   }, [id, deleteNode]);
 
+  const handleResize = useCallback(
+    (_event: unknown, { width, height }: { width: number; height: number }) => {
+      updateNodeData(id, { width, height });
+    },
+    [id, updateNodeData],
+  );
+
   const handleAIPromptGenerate = useCallback(() => {
     const newPosition = findNodePosition(id, 300, 200);
     const newNodeId = addNode(CANVAS_NODE_TYPES.text, newPosition);
@@ -348,10 +377,24 @@ export const TextNode = memo(function TextNode({
         </button>
       </NodeToolbar>
       <div
-        className={`min-w-[300px] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${selected ? "border-2 border-blue-500" : ""
-          } shadow-md relative group`}
+        className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${selected ? "border-2 border-blue-500" : ""
+          } shadow-md relative group flex flex-col`}
+        style={{
+          width: data.width || 320,
+          height: data.height || "auto",
+        }}
       >
-        <div className="p-1.5 flex items-center justify-between">
+        <NodeResizer
+          nodeId={id}
+          minWidth={150}
+          minHeight={80}
+          maxWidth={600}
+          maxHeight={800}
+          isVisible={selected}
+          onResize={handleResize}
+          handleClassName="!w-3 !h-3 !bg-blue-500 !border-0 !rounded-sm"
+        />
+        <div className="p-1.5 flex items-center justify-between flex-shrink-0">
           <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
             {data.displayName || "文本"}
           </span>
@@ -390,10 +433,10 @@ export const TextNode = memo(function TextNode({
         </div>
 
         {isEditing ? (
-          <div className="p-1.5">
+          <div className="p-1.5 flex-1 min-h-0">
             <textarea
               ref={textareaRef}
-              className="w-full min-h-[120px] text-sm border border-gray-200 dark:border-gray-600 rounded p-2 overflow-hidden bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full h-full text-sm border border-gray-200 dark:border-gray-600 rounded p-2 overflow-auto bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               value={data.content || ""}
               onChange={handleInlineContentChange}
               onCompositionStart={handleCompositionStart}
@@ -403,29 +446,25 @@ export const TextNode = memo(function TextNode({
               onClick={(e) => {
                 e.currentTarget.selectionStart = e.currentTarget.selectionEnd;
               }}
-              style={{
-                height: "auto",
-                minHeight: "80px",
-              }}
             />
           </div>
         ) : (
           <div
             ref={resultRef}
-            className={`relative min-h-[100px] p-1.5 cursor-pointer ${
+            className={`flex-1 min-h-0 p-1.5 cursor-pointer overflow-hidden ${
               isGenerating || taskStatus === "pending" || taskStatus === "processing" ? "preview-glow" : ""
             }`}
             onClick={handleResultClick}
             onDoubleClick={handleDoubleClick}
           >
             {data.content ? (
-              <div className="h-full min-h-[100px] rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 dark:from-gray-700 to-gray-100 dark:to-gray-600 p-2">
-                <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words">
+              <div className="h-full min-h-[80px] rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 dark:from-gray-700 to-gray-100 dark:to-gray-600 p-2 flex items-start">
+                <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-all overflow-auto w-full">
                   {truncateText(data.content, MAX_PREVIEW_LENGTH)}
                 </p>
               </div>
             ) : (
-              <div className="h-full min-h-[100px] flex flex-col items-center justify-center rounded-lg bg-gradient-to-br from-gray-50 dark:from-gray-700 to-gray-100 dark:to-gray-600">
+              <div className="h-full min-h-[80px] flex flex-col items-center justify-center rounded-lg bg-gradient-to-br from-gray-50 dark:from-gray-700 to-gray-100 dark:to-gray-600">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 dark:from-blue-900/40 to-purple-100 dark:to-purple-900/40 flex items-center justify-center">
                   <Type className="w-5 h-5 text-blue-500" />
                 </div>
