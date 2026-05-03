@@ -18,6 +18,7 @@ import { VideoSelectorModal } from "../ui/VideoSelectorModal";
 import { KeyframeModal } from "../ui/KeyframeModal";
 import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
+import { NodeTextarea } from "../components/NodeTextarea";
 import { VideoSettingCard } from "../components/VideoSettingCard";
 
 const RESOLUTION_OPTIONS: { value: VideoResolution; label: string }[] = [
@@ -949,16 +950,13 @@ export const VideoGenNode = memo(function VideoGenNode({
               </div>
 
               <div className="p-1.5">
-                <textarea
+                <NodeTextarea
                   ref={promptTextareaRef}
-                  className="nodrag nowheel w-full text-sm border border-gray-200 dark:border-gray-600 rounded p-2 overflow-hidden bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="描述你想要的视频..."
                   defaultValue={data.prompt || ""}
                   onCompositionStart={handleCompositionStart}
                   onCompositionEnd={handleCompositionEnd}
                   onChange={handlePromptChange}
-                  onMouseMove={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
                   style={{
                     height: data.prompt ? "auto" : "60px",
                     minHeight: "60px",
