@@ -436,7 +436,7 @@ export const TextNode = memo(function TextNode({
           <div className="p-1.5 flex-1 min-h-0">
             <textarea
               ref={textareaRef}
-              className="w-full h-full text-sm border border-gray-200 dark:border-gray-600 rounded p-2 overflow-auto bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="nodrag nowheel w-full h-full text-sm border border-gray-200 dark:border-gray-600 rounded p-2 overflow-auto bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               value={data.content || ""}
               onChange={handleInlineContentChange}
               onCompositionStart={handleCompositionStart}
@@ -446,6 +446,8 @@ export const TextNode = memo(function TextNode({
               onClick={(e) => {
                 e.currentTarget.selectionStart = e.currentTarget.selectionEnd;
               }}
+              onMouseMove={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
             />
           </div>
         ) : (
@@ -484,12 +486,14 @@ export const TextNode = memo(function TextNode({
               <div className="p-1.5">
                 <textarea
                   ref={textareaRef}
-                  className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded p-2 overflow-hidden bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="nodrag nowheel w-full text-sm border border-gray-200 dark:border-gray-600 rounded p-2 overflow-hidden bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="描述你想要生成的内容..."
                   defaultValue={data.prompt || ""}
                   onCompositionStart={handleCompositionStart}
                   onCompositionEnd={handleCompositionEnd}
                   onChange={handlePromptChange}
+                  onMouseMove={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
                   style={{
                     height: data.prompt ? "auto" : "80px",
                     minHeight: "80px",

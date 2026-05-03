@@ -833,12 +833,14 @@ const handleFile = useCallback(
             <div className="p-1.5">
               <textarea
                 ref={promptTextareaRef}
-                className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded p-2 overflow-hidden bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="nodrag nowheel w-full text-sm border border-gray-200 dark:border-gray-600 rounded p-2 overflow-hidden bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="描述你想要的图片..."
                 defaultValue={data.prompt || ""}
                 onCompositionStart={handleCompositionStart}
                 onCompositionEnd={handleCompositionEnd}
                 onChange={handlePromptChange}
+                onMouseMove={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 style={{
                   height: data.prompt ? "auto" : "60px",
                   minHeight: "60px",
