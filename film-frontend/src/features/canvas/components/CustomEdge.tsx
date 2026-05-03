@@ -1,4 +1,5 @@
 import { getBezierPath, type EdgeProps } from "@xyflow/react";
+import { useCanvasStore } from "../stores/canvasStore";
 
 import {
   DEFAULT_EDGE_STROKE_WIDTH,
@@ -14,6 +15,8 @@ export function CustomEdge({
   sourcePosition,
   targetPosition,
   style = {},
+  source,
+  target,
 }: EdgeProps) {
   const [edgePath] = getBezierPath({
     sourceX,
@@ -23,6 +26,9 @@ export function CustomEdge({
     targetY,
     targetPosition,
   });
+
+  const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
+  const isHighlighted = selectedNodeId === source || selectedNodeId === target;
 
   const strokeWidth = style.strokeWidth ?? DEFAULT_EDGE_STROKE_WIDTH;
   const opacity = style.opacity ?? DEFAULT_EDGE_OPACITY;
@@ -35,7 +41,7 @@ export function CustomEdge({
       stroke="currentColor"
       strokeWidth={strokeWidth}
       opacity={opacity}
-      className="react-flow__edge-path"
+      className={`react-flow__edge-path ${isHighlighted ? "edge-highlighted" : "edge-dimmed"}`}
     />
   );
 }

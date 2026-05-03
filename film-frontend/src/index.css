@@ -20,6 +20,16 @@ body.image-selector-open .react-flow__node-toolbar {
   opacity: 1 !important;
 }
 
+.react-flow__edge-path.edge-highlighted {
+  stroke-width: 4px !important;
+  stroke: #3b82f6 !important;
+  opacity: 1 !important;
+}
+
+.react-flow__edge-path.edge-dimmed {
+  opacity: 0.3 !important;
+}
+
 .react-flow.dark .react-flow__edge-path {
-  opacity: 2 !important;
+  opacity: 1 !important;
 }
