@@ -245,7 +245,7 @@ func InternalServerError(ctx iris.Context, err error) bool {
 		return false
 	}
 	ctx.StatusCode(500)
-	ctx.JSON(buildErrorResponse(500, "internal server error", err))
+	ctx.JSON(buildErrorResponse(500, err.Error(), err))
 	logging.Error(err)
 	return true
 }

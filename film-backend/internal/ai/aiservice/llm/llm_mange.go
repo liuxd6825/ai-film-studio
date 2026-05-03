@@ -8,7 +8,7 @@ import (
 )
 
 type ILLMService interface {
-	Chat(ctx context.Context, opts aioptions.NewChatOptions) (string, error)
+	Generate(ctx context.Context, opts aioptions.ChatRequest) (*aioptions.ChatResult, error)
 	GetModels() []aioptions.Model
 	GetProvider() aioptions.Provider
 }
@@ -35,17 +35,17 @@ func (s *LLMManage) Register(service ILLMService) {
 	}
 }
 
-func (s *LLMManage) Chat(ctx context.Context, opts aioptions.NewChatOptions) (string, error) {
+func (s *LLMManage) Generate(ctx context.Context, opts aioptions.ChatRequest) (*aioptions.ChatResult, error) {
 	service, err := s.getService(opts.Model)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return service.Chat(ctx, opts)
+	return service.Generate(ctx, opts)
 }
 
 func (s *LLMManage) getService(modelId string) (ILLMService, error) {
 	service, ok := s.modelMap[modelId]
-	if ok {
+	if !ok {
 		return nil, errors.New("not found service id " + modelId)
 	}
 	return service, nil

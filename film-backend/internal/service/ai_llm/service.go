@@ -65,6 +65,10 @@ func NewService(config *config.Config, aiLLMService *ai.AiLLMService) *Service {
 	}
 }
 
+func (s *Service) Generate(ctx context.Context, opts aioptions.ChatRequest) (*aioptions.ChatResult, error) {
+	return s.aiLLMService.Generate(ctx, opts)
+}
+
 func (s *Service) GetModels(ctx context.Context) []aioptions.Model {
 	return s.aiLLMService.GetModels()
 }

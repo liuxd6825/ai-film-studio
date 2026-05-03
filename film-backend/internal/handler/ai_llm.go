@@ -2,21 +2,61 @@ package handler
 
 import (
 	"context"
+	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/pkg/validator"
 	"open-film-service/internal/service/ai_llm"
+	"strings"
 
 	"github.com/kataras/iris/v12"
 )
 
 type AILLMHandler struct {
-	svc *ai_llm.Service
+	llmSvc *ai_llm.Service
 }
 
-func NewAILLMHandler(svc *ai_llm.Service) *AILLMHandler {
-	return &AILLMHandler{svc: svc}
+type ChatRequest struct {
+	CanvasID        string   `json:"canvasId,omitempty"   validate:"required"`
+	NodeID          string   `json:"nodeId,omitempty"  validate:"required"`
+	Prompt          string   `json:"prompt" validate:"required"`
+	Model           string   `json:"model"  validate:"required"`
+	AgentId         string   `json:"agentId"`
+	ReferenceImages []string `json:"referenceImages,omitempty"`
+}
+
+func NewAILLMHandler(llmSvc *ai_llm.Service) *AILLMHandler {
+	return &AILLMHandler{llmSvc: llmSvc}
+}
+
+func (h *AILLMHandler) Generate(ctx iris.Context) {
+	req, ok := validator.ParseAndValidate[ChatRequest](ctx)
+	if !ok {
+		return
+	}
+
+	if len(req.ReferenceImages) > 0 {
+		for i, fileUrl := range req.ReferenceImages {
+			if !strings.HasPrefix(fileUrl, "http://") && !strings.HasPrefix(fileUrl, "https://") {
+				req.ReferenceImages[i] = "http://127.0.0.1:17781" + fileUrl
+			}
+		}
+	}
+
+	chatRequest := aioptions.ChatRequest{
+		Prompt:  req.Prompt,
+		Model:   req.Model,
+		AgentId: req.AgentId,
+	}
+
+	result, err := h.llmSvc.Generate(ctx, chatRequest)
+	if err != nil {
+		validator.InternalServerError(ctx, err)
+		return
+	}
+	validator.Success(ctx, result)
+
 }
 
 func (h *AILLMHandler) GetModels(ctx iris.Context) {
-	models := h.svc.GetModels(context.Background())
+	models := h.llmSvc.GetModels(context.Background())
 	validator.Success(ctx, models)
 }

@@ -886,7 +886,7 @@ const handleFile = useCallback(
                 }`}
                 onClick={isGenerating ? handleCancel : handleGenerate}
               >
-                {isGenerating ? "取消" : "生成图片"}
+                {isGenerating ? "取消" : "生成"}
               </button>
             </div>
 

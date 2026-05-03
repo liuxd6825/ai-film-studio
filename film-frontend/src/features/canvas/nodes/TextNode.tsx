@@ -1,6 +1,7 @@
 import { memo, useState, useCallback, useRef, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { X, Trash2, Type, Sparkles, Image, Video, Volume } from "lucide-react";
+import { Trash2, Type, Sparkles, Image, Video, Volume } from "lucide-react";
 import {
   TextNodeData,
   CANVAS_NODE_TYPES,
@@ -65,6 +66,7 @@ export const TextNode = memo(function TextNode({
   data,
   selected,
 }: NodeProps & { data: TextNodeData }) {
+  const { canvasId } = useParams<{ canvasId: string }>();
   const projectId = useCanvasStore((s) => s.projectId);
   const addNode = useCanvasStore((s) => s.addNode);
   const addEdge = useCanvasStore((s) => s.addEdge);
@@ -253,17 +255,24 @@ export const TextNode = memo(function TextNode({
     setTaskProgress(0);
 
     try {
+      debugger
       setTaskStatus("processing");
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const result = await llmApi.generate(projectId, {
+        canvasId: canvasId || "",
+        nodeId: id,
+        prompt: data.prompt,
+        model: data.aiModel,
+      });
+      updateNodeData(id, { content: result });
       setTaskStatus("completed");
       setTaskProgress(100);
-      setIsGenerating(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "生成失败");
       setTaskStatus("failed");
+    } finally {
       setIsGenerating(false);
     }
-  }, [projectId, data.prompt]);
+  }, [projectId, canvasId, id, data.prompt, data.aiModel, updateNodeData]);
 
   const handleCancel = useCallback(() => {
     if (!window.confirm("确定要取消正在生成的任务吗？")) {
@@ -273,8 +282,9 @@ export const TextNode = memo(function TextNode({
     setTaskStatus("cancelled");
   }, []);
 
-  const truncateText = (text: string, maxLength: number): string => {
-    if (!text || text.length <= maxLength) return text;
+  const truncateText = (text: unknown, maxLength: number): string => {
+    if (!text || typeof text !== "string") return "";
+    if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
   };
 

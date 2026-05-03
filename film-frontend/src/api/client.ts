@@ -10,8 +10,13 @@ async function request<T>(
   method: string,
   path: string,
   body?: unknown,
+  params?: Record<string, string>,
 ): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
+  let url = `${API_BASE_URL}${path}`;
+  if (params) {
+    const searchParams = new URLSearchParams(params);
+    url += `?${searchParams.toString()}`;
+  }
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -33,7 +38,7 @@ async function request<T>(
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>("GET", path),
+  get: <T>(path: string, params?: Record<string, string>) => request<T>("GET", path, undefined, params),
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
   put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),

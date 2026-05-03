@@ -67,6 +67,7 @@ func NewRouter(h *Handler) *iris.Application {
 
 		// AI LLM 生成路由
 		api.Get("/projects/:projectId/llm/models", h.LLMHandler.GetModels)
+		api.Post("/projects/:projectId/llm/generate", h.LLMHandler.Generate)
 
 		// AI Image 生成路由
 		api.Post("/projects/:projectId/images/generate", h.AIImageHandler.Generate)

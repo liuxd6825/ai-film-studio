@@ -13,9 +13,8 @@ func newOpenAIChatModel(ctx context.Context, conf *config.ModelConfig) (model.To
 		APIKey:      conf.APIKey,
 		BaseURL:     conf.BaseURL,
 		Temperature: conf.Temperature,
-		MaxTokens:   conf.MaxTokens,
 		TopP:        conf.TopP,
-		APIVersion:  conf.APIVersion,
+		Model:       conf.Id,
 	})
 	return chatModel, err
 }

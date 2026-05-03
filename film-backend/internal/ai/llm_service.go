@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"context"
 	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/ai/aiservice/llm"
 	"open-film-service/internal/ai/aiservice/llm/openai"
@@ -17,18 +18,20 @@ func NewAiLLMService(cfg *config.ModelsConfig) *AiLLMService {
 		manage: manage,
 	}
 	for _, p := range cfg.Providers {
-		for _, m := range p.Models {
-			if m.DriverType == "openai" {
-				if service, err := openai.NewLLMService(m); err == nil {
-					manage.Register(service)
-				} else {
-					panic(err)
-				}
+		if p.DriverType == "openai" {
+			if service, err := openai.NewLLMService(p); err == nil {
+				manage.Register(service)
+			} else {
+				panic(err)
 			}
 		}
 	}
 
 	return service
+}
+
+func (s *AiLLMService) Generate(ctx context.Context, opts aioptions.ChatRequest) (*aioptions.ChatResult, error) {
+	return s.manage.Generate(ctx, opts)
 }
 
 func (s *AiLLMService) GetModels() []aioptions.Model {
