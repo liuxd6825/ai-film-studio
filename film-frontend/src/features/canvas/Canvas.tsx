@@ -12,7 +12,7 @@ import {
   type EdgeChange,
   type Viewport,
   type XYPosition,
-} from "@xyflow/react";
+  } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { v4 as uuidv4 } from "uuid";
 
@@ -26,6 +26,7 @@ import { NodeSelectionMenu } from "./NodeSelectionMenu";
 import { ImageViewerModal } from "./ui/ImageViewerModal";
 import { VideoViewerModal } from "./ui/VideoViewerModal";
 import { KeyframePanel } from "./components/KeyframePanel";
+import { CustomEdge } from "./components/CustomEdge";
 import { useProjectStore } from "../../stores/projectStore";
 import { canvasApi } from "../../api/canvasApi";
 import { useThemeStore } from "@/stores/themeStore";
@@ -648,6 +649,11 @@ export function Canvas() {
         panOnDrag={false}
         elementsSelectable={!isLocked && !isImageSelectorOpen}
         colorMode={isDark ? "dark" : "light"}
+        edgeTypes={{ floatingDelete: CustomEdge }}
+        defaultEdgeOptions={{
+          type: "floatingDelete",
+          style: { strokeWidth: 4, opacity: 1 },
+        }}
       >
         <Background
           variant={BackgroundVariant.Dots}

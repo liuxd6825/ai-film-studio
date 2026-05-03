@@ -783,6 +783,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
           sourceHandle,
           targetHandle,
           type: "floatingDelete",
+          style: { strokeWidth: 4, opacity: 1 },
         },
         state.edges,
       ),
@@ -955,6 +956,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       sourceHandle: "source",
       targetHandle: "target",
       type: "floatingDelete",
+      style: { strokeWidth: 4, opacity: 1 },
     };
 
     set({

@@ -253,6 +253,9 @@ export interface CanvasNode {
   style?: Record<string, unknown>;
 }
 
+export const DEFAULT_EDGE_STROKE_WIDTH = 2;
+export const DEFAULT_EDGE_OPACITY = 0.8;
+
 export interface CanvasEdge {
   id: string;
   source: string;
@@ -260,6 +263,10 @@ export interface CanvasEdge {
   sourceHandle?: string;
   targetHandle?: string;
   type?: string;
+  style?: {
+    strokeWidth?: number;
+    opacity?: number;
+  };
 }
 
 export interface NodeCreationDto {

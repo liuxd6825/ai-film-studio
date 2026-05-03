@@ -14,3 +14,12 @@ body {
 body.image-selector-open .react-flow__node-toolbar {
   display: none !important;
 }
+
+.react-flow__edge-path {
+  stroke-width: 2px !important;
+  opacity: 1 !important;
+}
+
+.react-flow.dark .react-flow__edge-path {
+  opacity: 2 !important;
+}
