@@ -153,7 +153,7 @@ class JimengPage(BasePage):
         
         await self.page.locator(".lv-select-option").filter(has_text=mode_text).first.click(force=True)
         
-        await self.page.wait_for_timeout(1000)
+        await self.page.wait_for_timeout(500)
         await self._close_any_open_dropdown()
     
     async def select_generation_mode(self, mode: str):

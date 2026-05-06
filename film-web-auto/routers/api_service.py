@@ -279,7 +279,10 @@ class ApiService:
         if errors:
             return Result(code=400, success=False, message="; ".join(errors), data=None)
 
-        workspace = "0"
+        workspace = req.workspace
+        if workspace=="":
+            workspace = "0"
+
         request_id, _ = await self.create_request(session, workspace, system="gemini")
 
         async def background_generate():
