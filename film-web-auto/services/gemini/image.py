@@ -42,7 +42,9 @@ class ImageGenerationService(BaseService):
 
             await gemini.navigate()
 
-            await gemini.select_image_generation_tool(model)
+            await gemini.select_image_generation_tool("制作图片")
+
+            await gemini.select_model(model=model)
 
             if files and len(files) > 0:
                 await gemini.upload_files(files)
@@ -51,7 +53,29 @@ class ImageGenerationService(BaseService):
 
             await gemini.submit()
 
-            result = await gemini.wait_for_generation_complete(timeout=settings.TASK_TIMEOUT)
+            result = None
+            if model == "快速":
+                result = await gemini.wait_for_generation_complete(timeout=settings.TASK_TIMEOUT)
+            else:
+                result = await gemini.wait_for_generation_complete_v2(timeout=settings.TASK_TIMEOUT)
+
+            if result is None:
+                data = {
+                    "id": request_id + "_error",
+                    "request_id": request_id,
+                    "workspace": "",
+                    "data_id": "",
+                    "type": "image",
+                    "system": "gemini",
+                    "status": "failed",
+                    "desc": "模型不匹配",
+                }
+                try:
+                    await task_service.create_task(data)
+                    await session.commit()
+                except Exception:
+                    await session.rollback()
+                return {"success": False, "status": "Failed", "result": "模型不匹配"}
 
             status = result["status"]
             message = result["message"]

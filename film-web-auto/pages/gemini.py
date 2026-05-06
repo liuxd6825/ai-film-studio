@@ -126,8 +126,30 @@ class GeminiPage(BasePage):
 
             await self.page.wait_for_timeout(LOGIN_CHECK_INTERVAL * 1000)
 
-    async def select_image_generation_tool(self, model: str = "制作图片"):
-        print(f"[GeminiPage] 选择图片生成工具: {model}...")
+    async def select_model(self, model: str = "快速"):
+        await self.page.wait_for_timeout(1000)
+        switcher = self.page.locator("div[class*='model-picker-container']>bard-mode-switcher")
+        if await switcher.count() > 0:
+            await switcher.first.click()
+        else:
+            print(f"没有找到model")
+        await self.page.wait_for_timeout(1000)
+
+        menu_items = self.page.locator("div[class='cdk-overlay-pane'] button[role='menuitem']")
+        item_count = await menu_items.count()
+        for i in range(item_count):
+            item = menu_items.nth(i)
+            title_span = item.locator("span[class*='mode-title']")
+            if await title_span.count() > 0:
+                text = await title_span.first.text_content() or ""
+                if text.strip() == model:
+                    await item.click()
+                    await self.page.wait_for_timeout(500)
+                    return True
+        return False
+
+    async def select_image_generation_tool(self, tool: str = "制作图片"):
+        print(f"[GeminiPage] 选择图片生成工具: {tool}...")
         toolbox_drawer = self.page.locator("toolbox-drawer")
         if await toolbox_drawer.count() > 0:
             await toolbox_drawer.first.click()
@@ -141,13 +163,13 @@ class GeminiPage(BasePage):
                 item = toolbox_items.nth(i)
                 text = await item.text_content() or ""
                 print(f"[GeminiPage] toolbox-drawer-item[{i}] 文本: {text.strip()}")
-                if model in text:
+                if tool in text:
                     await item.click()
                     await self.page.wait_for_timeout(500)
                     print(f"[GeminiPage] 已选中工具: {text.strip()}")
                     return True
 
-        print(f"[GeminiPage] 未找到包含 '{model}' 的工具")
+        print(f"[GeminiPage] 未找到包含 '{tool}' 的工具")
         return False
 
     async def click_upload_button(self):
@@ -283,6 +305,91 @@ class GeminiPage(BasePage):
                     return "";
                 }
             """)
+
+            url = self.page.url
+            workspace = url.rsplit("/", 1)[-1] if "/" in url else ""
+
+            if workspace and len(workspace) == 16 and "?" not in workspace:
+                print(f"[GeminiPage] 获取到 workspace: {workspace}")
+                return {
+                    "data_id": data_id,
+                    "workspace": workspace,
+                    "status": "generating",
+                    "message": "内容生成中"
+                }
+            else:
+                return {
+                    "data_id": "",
+                    "workspace": "",
+                    "status": "failed",
+                    "message": "没有找到workspace"
+                }
+
+        return {
+            "data_id": "",
+            "workspace": "",
+            "status": "failed",
+            "message": "生成超时"
+        }
+
+    async def wait_for_generation_complete_v2(self, timeout: int = 60000) -> dict:
+        print("[GeminiPage] 等待生成完成...")
+        # await self.page.wait_for_timeout(5000)
+
+        data_id = ""
+        while not data_id:
+            data_id = await self.page.evaluate("""
+                () => {
+                    const scroller = document.querySelector("infinite-scroller[data-test-id='chat-history-container']");
+                    if (scroller && scroller.children.length > 0) {
+                        const lastChild = scroller.children[scroller.children.length - 1];
+                        return lastChild.id || "";
+                    }
+                    return "";
+                }
+            """)
+            if not data_id:
+                await self.page.wait_for_timeout(1000)
+
+        thinking_selector = f"[id='{data_id}'] .thinking"
+        print(f"[GeminiPage] 等待 .thinking 元素出现: {thinking_selector}")
+        thinking_timeout = 0
+        while thinking_timeout < 120:
+            try:
+                thinking_element = self.page.locator(thinking_selector)
+                if await thinking_element.count() > 0:
+                    print(f"[GeminiPage] .thinking 元素已找到")
+                    break
+            except Exception as e:
+                print(f"[GeminiPage] 检查 .thinking 元素异常: {e}")
+                break
+            thinking_timeout += 1
+            await self.page.wait_for_timeout(1000)
+        else:
+            print("[GeminiPage] 等待 .thinking 元素超时")
+            return {
+                "data_id": "",
+                "workspace": "",
+                "status": "failed",
+                "message": "等待thinking元素超时"
+            }
+
+        pending_count = 0
+        while pending_count <= 600:
+            pending = self.page.locator(thinking_selector)
+            if await pending.count() > 0:
+                pending_count += 1
+                if pending_count > 600:
+                    return {
+                        "data_id": "",
+                        "workspace": "",
+                        "status": "failed",
+                        "message": "生成超时"
+                    }
+                await self.page.wait_for_timeout(1000)
+                continue
+
+            pending_count = 0
 
             url = self.page.url
             workspace = url.rsplit("/", 1)[-1] if "/" in url else ""

@@ -26,7 +26,7 @@ VIDEO_VALID = {
 }
 
 GEMINI_IMAGE_VALID = {
-    "model": ["制作图片"]
+    "model": ["快速", "思考", "Pro"]
 }
 
 
@@ -268,6 +268,8 @@ class ApiService:
         return Result(data={"result_id": request_id, "result": "生成中", "result_url": self._build_result_url(request_id)})
 
     async def generate_gemini_image(self, session: AsyncSession, req) -> Result:
+        if req.model is None:
+            req.model = "思考"
         errors = self._validate_gemini_image_params(model=req.model)
         if not req.prompt or not req.prompt.strip():
             errors.append("prompt为必填项且不能为空")
