@@ -112,8 +112,30 @@ func (s *Service) Generate(ctx context.Context, opts aioptions.ChatRequest) (*ai
 		return s.GetVideoPrompt(ctx, opts)
 	case "vertical_video_prompt":
 		return s.GetVideoPrompt(ctx, opts)
+	case "six_grid_layout":
+		return s.GetSixGridLayoutPrompt(ctx, opts)
 	}
 	return nil, errors.New("invalid prompt type " + opts.PromptType)
+}
+
+func (s *Service) GetSixGridLayoutPrompt(ctx context.Context, opts aioptions.ChatRequest) (*aioptions.ChatResult, error) {
+	sb := strings.Builder{}
+	sb.WriteString("根据以下要求生图片:\n```\n")
+	sb.WriteString(opts.Prompt)
+	sb.WriteString("\n```\n")
+	sb.WriteString(_six_grid_layout)
+
+	totalResult, err := s.aiLLMService.Generate(ctx, aioptions.ChatRequest{
+		Model:  opts.Model,
+		Prompt: sb.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := &aioptions.ChatResult{
+		Content: totalResult.Content,
+	}
+	return result, nil
 }
 
 func (s *Service) GetModels(ctx context.Context) []aioptions.Model {

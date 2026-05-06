@@ -48,7 +48,7 @@ export const PromptPage: React.FC = () => {
     loadData();
   }, [selectedCategoryKey]);
 
-  const filteredPrompts = prompts.filter((p) => {
+  const filteredPrompts = (prompts || []).filter((p) => {
     const matchSearch =
       !searchKeyword ||
       p.title.toLowerCase().includes(searchKeyword.toLowerCase());

@@ -34,7 +34,7 @@ export const PromptList = memo(function PromptList({
     }
   }, [projectId, selectedCategoryKey, setPrompts]);
 
-  const filteredPrompts = prompts.filter((p) => {
+  const filteredPrompts = (prompts || []).filter((p) => {
     const matchSearch =
       !searchKeyword ||
       p.title.toLowerCase().includes(searchKeyword.toLowerCase());

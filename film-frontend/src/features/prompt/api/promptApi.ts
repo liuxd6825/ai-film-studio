@@ -56,7 +56,14 @@ export const promptApi = {
   },
 
   listByCategory: (projectId: string, categoryKey: string) => {
-    return api.get<Prompt[]>(`/api/v1/prompt-category/${categoryKey}/prompts?projectId=${projectId}`);
+    return api.get<any[]>(`/api/v1/prompt-category/${categoryKey}/prompts?projectId=${projectId}`).then((data): Prompt[] => {
+      if (!data || !Array.isArray(data)) return [];
+      return data.map(p => ({
+        ...p,
+        content: "",
+        variables: typeof p.variables === "string" ? JSON.parse(p.variables || "[]") : p.variables || [],
+      }));
+    });
   },
 
   get: (id: string) =>
