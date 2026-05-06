@@ -223,6 +223,7 @@ export interface TextNodeData extends NodeDisplayData {
   content: string;
   prompt: string;
   aiModel?: string;
+  promptType?: string;
   width?: number;
   height?: number;
 }
@@ -251,6 +252,7 @@ export interface CanvasNode {
   parentId?: string;
   extent?: "parent" | undefined;
   style?: Record<string, unknown>;
+  createdAt?: number;
 }
 
 export const DEFAULT_EDGE_STROKE_WIDTH = 2;

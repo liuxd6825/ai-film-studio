@@ -25,6 +25,7 @@ import { nodeTypes } from "./nodes";
 import { NodeSelectionMenu } from "./NodeSelectionMenu";
 import { ImageViewerModal } from "./ui/ImageViewerModal";
 import { VideoViewerModal } from "./ui/VideoViewerModal";
+import { TextContentModal } from "./ui/TextContentModal";
 import { KeyframePanel } from "./components/KeyframePanel";
 import { CustomEdge } from "./components/CustomEdge";
 import { useProjectStore } from "../../stores/projectStore";
@@ -518,6 +519,13 @@ export function Canvas() {
 
       const isCtrlOrCmd = event.ctrlKey || event.metaKey;
       if (isCtrlOrCmd && event.key === "z" && !event.shiftKey) {
+        if (
+          document.activeElement?.tagName === "INPUT" ||
+          document.activeElement?.tagName === "TEXTAREA" ||
+          (document.activeElement as HTMLElement)?.isContentEditable
+        ) {
+          return;
+        }
         event.preventDefault();
         useCanvasStore.getState().undo();
       }
@@ -525,6 +533,13 @@ export function Canvas() {
         isCtrlOrCmd &&
         (event.key === "y" || (event.key === "z" && event.shiftKey))
       ) {
+        if (
+          document.activeElement?.tagName === "INPUT" ||
+          document.activeElement?.tagName === "TEXTAREA" ||
+          (document.activeElement as HTMLElement)?.isContentEditable
+        ) {
+          return;
+        }
         event.preventDefault();
         useCanvasStore.getState().redo();
       }
@@ -537,6 +552,13 @@ export function Canvas() {
         }
       }
       if (isCtrlOrCmd && event.key === "c") {
+        if (
+          document.activeElement?.tagName === "INPUT" ||
+          document.activeElement?.tagName === "TEXTAREA" ||
+          (document.activeElement as HTMLElement)?.isContentEditable
+        ) {
+          return;
+        }
         event.preventDefault();
         const selectedNodes = nodes.filter((n) => n.selected);
         if (selectedNodes.length > 0) {
@@ -544,8 +566,27 @@ export function Canvas() {
         }
       }
       if (isCtrlOrCmd && event.key === "v") {
+        if (
+          document.activeElement?.tagName === "INPUT" ||
+          document.activeElement?.tagName === "TEXTAREA" ||
+          (document.activeElement as HTMLElement)?.isContentEditable
+        ) {
+          return;
+        }
         event.preventDefault();
-        pasteNodes();
+        const container = containerRef.current;
+        if (container) {
+          const rect = container.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const flowPos = reactFlowInstance.screenToFlowPosition({
+            x: centerX,
+            y: centerY,
+          });
+          pasteNodes(flowPos);
+        } else {
+          pasteNodes();
+        }
       }
 
       if (event.key === "a" && isCtrlOrCmd) {
@@ -677,6 +718,8 @@ export function Canvas() {
       <ImageViewerModal />
 
       <VideoViewerModal />
+
+      <TextContentModal />
 
       <KeyframePanel />
     </div>

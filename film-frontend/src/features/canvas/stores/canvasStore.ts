@@ -81,6 +81,11 @@ interface CanvasState {
     videoList: string[];
     currentIndex: number;
   };
+  contentEditor: {
+    isOpen: boolean;
+    nodeId: string | null;
+    content: string;
+  };
   isInteractingWithInput: boolean;
   lastAddNodePosition: { x: number; y: number } | null;
   isLocked: boolean;
@@ -182,6 +187,9 @@ interface CanvasState {
   openVideoViewer: (videoUrl: string, videoList?: string[]) => void;
   closeVideoViewer: () => void;
   navigateVideoViewer: (direction: "prev" | "next") => void;
+  openContentEditor: (nodeId: string, content: string) => void;
+  closeContentEditor: () => void;
+  updateContentEditorContent: (content: string) => void;
 
   undo: () => boolean;
   redo: () => boolean;
@@ -575,6 +583,7 @@ function createNode(
     type,
     position,
     data: mergedData,
+    createdAt: Date.now(),
   };
 }
 
@@ -600,6 +609,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     currentVideoUrl: null,
     videoList: [],
     currentIndex: 0,
+  },
+  contentEditor: {
+    isOpen: false,
+    nodeId: null,
+    content: "",
   },
   isInteractingWithInput: false,
   lastAddNodePosition: null,
@@ -911,6 +925,35 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         },
       });
     }
+  },
+
+  openContentEditor: (nodeId: string, content: string) => {
+    set({
+      contentEditor: {
+        isOpen: true,
+        nodeId,
+        content,
+      },
+    });
+  },
+
+  closeContentEditor: () => {
+    set({
+      contentEditor: {
+        isOpen: false,
+        nodeId: null,
+        content: "",
+      },
+    });
+  },
+
+  updateContentEditorContent: (content: string) => {
+    set((state) => ({
+      contentEditor: {
+        ...state.contentEditor,
+        content,
+      },
+    }));
   },
 
   addNode: (type, position, data = {}) => {

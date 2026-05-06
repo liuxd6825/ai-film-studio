@@ -177,7 +177,7 @@ export function ImageSelectorModal({
             }`}
             onClick={handleConfirm}
           >
-            确认选择
+            确认
           </button>
         </div>
       </div>

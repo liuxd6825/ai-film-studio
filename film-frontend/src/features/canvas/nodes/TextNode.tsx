@@ -1,13 +1,13 @@
 import { memo, useState, useCallback, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react";
-import { Trash2, Type, Sparkles, Image, Video, Volume } from "lucide-react";
+import { Trash2, Type, Sparkles, Image, Video, Volume, FileText } from "lucide-react";
 import {
   TextNodeData,
   CANVAS_NODE_TYPES,
 } from "../domain/canvasNodes";
 import { useCanvasStore } from "../stores/canvasStore";
-import { llmApi, type LLMModel } from "../../../api/llmApi";
+import { llmApi, type LLMModel, type PromptType } from "../../../api/llmApi";
 import { NodeToolbar } from "../ui/NodeToolbar";
 import { NodeTextarea } from "../components/NodeTextarea";
 
@@ -96,6 +96,7 @@ export const TextNode = memo(function TextNode({
   const findNodePosition = useCanvasStore((s) => s.findNodePosition);
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
+  const openContentEditor = useCanvasStore((s) => s.openContentEditor);
 
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -104,9 +105,11 @@ export const TextNode = memo(function TextNode({
   const [taskStatus, setTaskStatus] = useState<"idle" | "pending" | "processing" | "completed" | "failed" | "cancelled">("idle");
   const [taskProgress, setTaskProgress] = useState(0);
   const [availableAIModels, setAvailableAIModels] = useState<LLMModel[]>([]);
+  const [availablePromptTypes, setAvailablePromptTypes] = useState<PromptType[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const isComposingRef = useRef(false);
 
   useEffect(() => {
@@ -157,6 +160,12 @@ export const TextNode = memo(function TextNode({
         setAvailableAIModels(models);
         if (!models.some((m) => m.id === data.aiModel)) {
           updateNodeData(id, { aiModel: models[0]?.id || "veo" });
+        }
+      });
+      llmApi.getPromptTypes(projectId || "default").then((types) => {
+        setAvailablePromptTypes(types);
+        if (!types.some((t) => t.id === data.promptType)) {
+          updateNodeData(id, { promptType: types[0]?.id || "chat" });
         }
       });
     }
@@ -213,19 +222,19 @@ export const TextNode = memo(function TextNode({
   );
 
   const handleInlineContentChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    (_e: React.ChangeEvent<HTMLTextAreaElement>) => {
       if (isComposingRef.current) {
         return;
       }
-      updateNodeData(id, { content: e.target.value });
+      updateNodeData(id, { content: textareaRef.current?.value || "" });
     },
     [id, updateNodeData],
   );
 
   const handleInlineCompositionEnd = useCallback(
-    (e: React.CompositionEvent<HTMLTextAreaElement>) => {
+    (_e: React.CompositionEvent<HTMLTextAreaElement>) => {
       isComposingRef.current = false;
-      updateNodeData(id, { content: e.currentTarget.value });
+      updateNodeData(id, { content: textareaRef.current?.value || "" });
     },
     [id, updateNodeData],
   );
@@ -233,6 +242,24 @@ export const TextNode = memo(function TextNode({
   const handleFinishEditing = useCallback(() => {
     setIsEditing(false);
   }, []);
+
+  const handleContentChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      if (isComposingRef.current) {
+        return;
+      }
+      updateNodeData(id, { content: e.currentTarget.value });
+    },
+    [id, updateNodeData],
+  );
+
+  const handleContentCompositionEnd = useCallback(
+    (e: React.CompositionEvent<HTMLTextAreaElement>) => {
+      isComposingRef.current = false;
+      updateNodeData(id, { content: e.currentTarget.value });
+    },
+    [id, updateNodeData],
+  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -253,6 +280,10 @@ export const TextNode = memo(function TextNode({
     },
     [id, updateNodeData],
   );
+
+  const handleEditContent = useCallback(() => {
+    openContentEditor(id, data.content || "");
+  }, [id, data.content, openContentEditor]);
 
   const handleAIPromptGenerate = useCallback(() => {
     const newPosition = findNodePosition(id, 300, 200);
@@ -302,6 +333,7 @@ export const TextNode = memo(function TextNode({
         nodeId: id,
         prompt: data.prompt,
         model: data.aiModel,
+        promptType: data.promptType || "chat",
       });
       updateNodeData(id, { content: result });
       setTaskStatus("completed");
@@ -312,7 +344,7 @@ export const TextNode = memo(function TextNode({
     } finally {
       setIsGenerating(false);
     }
-  }, [projectId, canvasId, id, data.prompt, data.aiModel, updateNodeData]);
+  }, [projectId, canvasId, id, data.prompt, data.aiModel, data.promptType, updateNodeData]);
 
   const handleCancel = useCallback(() => {
     if (!window.confirm("确定要取消正在生成的任务吗？")) {
@@ -374,6 +406,17 @@ export const TextNode = memo(function TextNode({
           title="音频生成"
         >
           <Volume className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleEditContent();
+          }}
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+          title="编辑内容"
+        >
+          <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
         <button
           type="button"
@@ -446,12 +489,13 @@ export const TextNode = memo(function TextNode({
         {isEditing ? (
           <div className="p-1.5 flex-1 min-h-0">
             <NodeTextarea
-              ref={textareaRef}
+              ref={contentTextareaRef}
               className="h-full overflow-auto"
-              value={data.content || ""}
-              onChange={handleInlineContentChange}
+              placeholder="输入内容..."
+              defaultValue={data.content || ""}
               onCompositionStart={handleCompositionStart}
-              onCompositionEnd={handleInlineCompositionEnd}
+              onCompositionEnd={handleContentCompositionEnd}
+              onChange={handleContentChange}
               onKeyDown={handleKeyDown}
               onBlur={handleFinishEditing}
               onClick={(e) => {
@@ -523,6 +567,24 @@ export const TextNode = memo(function TextNode({
                     </option>
                   ))}
                 </select>
+
+                {availablePromptTypes.length > 0 && (
+                  <select
+                    className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    value={data.promptType || "chat"}
+                    onChange={(e) =>
+                      updateNodeData(id, {
+                        promptType: e.target.value,
+                      })
+                    }
+                  >
+                    {availablePromptTypes.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title}
+                      </option>
+                    ))}
+                  </select>
+                )}
 
                 <button
                   className={`ml-auto px-4 py-1.5 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
