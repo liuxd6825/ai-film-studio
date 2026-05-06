@@ -87,6 +87,10 @@ func (s *PromptAdminService) List(ctx context.Context, projectID uuid.UUID, cate
 	return s.repo.ListByProjectIDWithSystem(ctx, projectID, tag)
 }
 
+func (s *PromptAdminService) ListByCategory(ctx context.Context, projectID uuid.UUID, categoryKey string) ([]model.Prompt, error) {
+	return s.repo.ListByCategoryKeyWithSystem(ctx, projectID, categoryKey)
+}
+
 type UpdateSystemPromptRequest struct {
 	Title       string                 `json:"title"`
 	Content     string                 `json:"content"`

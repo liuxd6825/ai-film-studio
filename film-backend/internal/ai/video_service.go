@@ -21,6 +21,8 @@ func NewAiVideoService(cfg *config.ModelsConfig) *AiVideoService {
 			manage.Register(volcengine.NewVideoService(provider.APIKey, provider.BaseURL))
 		case "jimeng_web":
 			manage.Register(jimeng.NewVideoService(provider.BaseURL))
+		case "openai":
+			manage.Register(jimeng.NewVideoService(provider.BaseURL))
 		}
 	}
 	service := &AiVideoService{

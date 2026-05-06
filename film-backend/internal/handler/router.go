@@ -240,6 +240,9 @@ func NewRouter(h *Handler) *iris.Application {
 		// Prompt Category 路由
 		api.Get("/prompt-categories", h.Category.List)
 
+		// 按分类查询提示词（包含系统提示词，无 content）
+		api.Get("/prompt-category/:categoryKey/prompts", h.PromptAdmin.ListByCategory)
+
 		// Admin Prompt 路由（包含系统提示词）
 		adminPrompts := api.Party("/admin/prompts")
 		{

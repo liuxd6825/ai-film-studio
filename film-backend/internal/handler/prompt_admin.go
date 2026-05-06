@@ -199,6 +199,58 @@ func (h *PromptAdminHandler) GetVersions(ctx iris.Context) {
 	ctx.JSON(iris.Map{"code": 200, "data": versions})
 }
 
+func (h *PromptAdminHandler) ListByCategory(ctx iris.Context) {
+	categoryKey := ctx.Params().Get("categoryKey")
+	projectIDStr := ctx.URLParam("projectId")
+
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		ctx.StatusCode(400)
+		ctx.JSON(iris.Map{"code": 400, "message": "invalid projectId"})
+		return
+	}
+
+	prompts, err := h.svc.ListByCategory(ctx, projectID, categoryKey)
+	if err != nil {
+		ctx.StatusCode(500)
+		ctx.JSON(iris.Map{"code": 500, "message": err.Error()})
+		return
+	}
+
+	var response []PromptListItemResponse
+	for _, p := range prompts {
+		response = append(response, PromptListItemResponse{
+			ID:          p.ID,
+			ProjectID:   p.ProjectID,
+			Title:       p.Title,
+			CategoryKey: p.CategoryKey,
+			Tags:        p.Tags,
+			Variables:   p.Variables,
+			Version:     p.Version,
+			IsLatest:    p.IsLatest,
+			IsSystem:    p.IsSystem,
+			CreatedAt:   p.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:   p.UpdatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	ctx.JSON(iris.Map{"code": 200, "data": response})
+}
+
+type PromptListItemResponse struct {
+	ID          uuid.UUID `json:"id"`
+	ProjectID   uuid.UUID `json:"projectId"`
+	Title       string    `json:"title"`
+	CategoryKey string    `json:"categoryKey"`
+	Tags        string    `json:"tags"`
+	Variables   string    `json:"variables"`
+	Version     int       `json:"version"`
+	IsLatest    bool      `json:"isLatest"`
+	IsSystem    bool      `json:"isSystem"`
+	CreatedAt   string    `json:"createdAt"`
+	UpdatedAt   string    `json:"updatedAt"`
+}
+
 func (h *PromptAdminHandler) RestoreVersion(ctx iris.Context) {
 	idStr := ctx.Params().Get("id")
 	id, err := uuid.Parse(idStr)
