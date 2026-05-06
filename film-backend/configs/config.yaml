@@ -92,7 +92,7 @@ video_models:
       base_url: "https://ark.cn-beijing.volces.com/api/v3"
       api_key: "0c6dab72-3465-4635-9c2a-da689d2c1e00"
     open_router:
-      driver_type: "openai"
+      driver_type: "open_router"
       title: "OpenRouter"
       api_key: "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"
       base_url: "https://openrouter.ai/api/v1/chat/completions"
