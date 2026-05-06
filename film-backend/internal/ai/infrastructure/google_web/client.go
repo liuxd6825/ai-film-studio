@@ -129,7 +129,6 @@ func (s *GoogleWebClient) GetImageModel(model string) (res string, err error) {
 
 func (s *GoogleWebClient) generate(ctx context.Context, req GenerateRequest) (*GenerateResponse, error) {
 	req.WorkType = "全能参考"
-	req.Workspace = "f73618ee91cb132a"
 	if req.Workspace == "" {
 		return nil, ErrMissingWorkspace
 	}

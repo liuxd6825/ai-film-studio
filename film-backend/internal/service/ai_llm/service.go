@@ -2,10 +2,12 @@ package ai_llm
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"open-film-service/internal/ai"
 	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/config"
+	"strings"
 )
 
 var (
@@ -66,9 +68,66 @@ func NewService(config *config.Config, aiLLMService *ai.AiLLMService) *Service {
 }
 
 func (s *Service) Generate(ctx context.Context, opts aioptions.ChatRequest) (*aioptions.ChatResult, error) {
-	return s.aiLLMService.Generate(ctx, opts)
+	switch opts.PromptType {
+	case "chat":
+		return s.aiLLMService.Generate(ctx, opts)
+	case "horizontal_video_prompt":
+		return s.GetVideoPrompt(ctx, opts)
+	case "vertical_video_prompt":
+		return s.GetVideoPrompt(ctx, opts)
+	}
+	return nil, errors.New("invalid prompt type " + opts.PromptType)
 }
 
 func (s *Service) GetModels(ctx context.Context) []aioptions.Model {
 	return s.aiLLMService.GetModels()
+}
+
+// 1. 嵌入单个文本文件
+//
+//go:embed prompts/1.横版手动分段剧情提示词.md
+var horizontal_video_prompt string
+
+//go:embed prompts/1.竖版手动分段剧情提示词.md
+var vertical_video_prompt string
+
+//go:embed prompts/2.输出示例.md
+var _videoPrompt string
+
+func (s *Service) GetVideoPrompt(ctx context.Context, opts aioptions.ChatRequest) (*aioptions.ChatResult, error) {
+	sb := strings.Builder{}
+	if opts.PromptType == "horizontal_video_prompt" {
+		sb.WriteString(horizontal_video_prompt)
+	} else {
+		sb.WriteString(vertical_video_prompt)
+	}
+
+	sb.WriteString(opts.Prompt)
+	totalResult, err := s.aiLLMService.Generate(ctx, aioptions.ChatRequest{
+		Model:  opts.Model,
+		Prompt: sb.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sb.Reset()
+	sb.WriteString(_videoPrompt)
+	sb.WriteString("\n按**输出示例**格式对以下故事内容进行输出：\n")
+	sb.WriteString(opts.Prompt)
+
+	videoResult, err := s.aiLLMService.Generate(ctx, aioptions.ChatRequest{
+		Model:  opts.Model,
+		Prompt: sb.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	content := strings.Replace(totalResult.Content, "【整片情绪基调】", videoResult.Content+"【整片情绪基调】", 1)
+	result := &aioptions.ChatResult{
+		Content: content,
+	}
+
+	return result, nil
 }

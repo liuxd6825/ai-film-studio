@@ -37,13 +37,14 @@ lang_models:
           use_functions: true
           input:
             - "text"
+
 image_models:
   providers:
-    jimeng_web:
-      driver_type: "jimeng_web"
-      title: "即梦网"
-      api_key : "11111"
-      base_url: "http://127.0.0.1:18001"
+#    jimeng_web:
+#      driver_type: "jimeng_web"
+#      title: "即梦网"
+#      api_key : "11111"
+#      base_url: "http://127.0.0.1:18001"
     google_web:
       driver_type: "google_web"
       title: "谷歌网"

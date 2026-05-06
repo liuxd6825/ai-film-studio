@@ -61,10 +61,18 @@ func (s *JiMengClient) NewTask(ctx context.Context, opts aioptions.NewTaskOption
 		req.Seed = fmt.Sprintf("%d", opts.Video.Duration) + "s"
 		req.AspectRatio = opts.Video.AspectRatio
 		req.Resolution = opts.Video.Resolution.String()
+		req.Model, err = s.GetVideoModel(opts.Model)
+		if err != nil {
+			return nil, err
+		}
 	} else if opts.TaskType == aioptions.TaskTypeImage {
 		req.Seed = "0s"
 		req.AspectRatio = opts.Image.AspectRatio
 		req.Resolution = opts.Image.Resolution.String()
+		req.Model, err = s.GetImageModel(opts.Model)
+		if err != nil {
+			return nil, err
+		}
 	} else if opts.TaskType == "" {
 		return nil, errors.New("invalid task type")
 	}

@@ -75,7 +75,7 @@ func (h *AIImageHandler) Generate(ctx iris.Context) {
 	}
 
 	if req.Workspace == "" {
-		req.Workspace = "12358121623308"
+		req.Workspace = "24abc74312f3960a"
 	}
 
 	imageReq := ai_image.GenerationRequest{

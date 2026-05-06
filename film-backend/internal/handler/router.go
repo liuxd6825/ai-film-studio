@@ -66,8 +66,7 @@ func NewRouter(h *Handler) *iris.Application {
 		api.Get("/projects/:projectId/canvas/nodes/:nodeId/task-images/count", h.CanvasTask.GetNodeTaskImagesCount)
 
 		// AI LLM 生成路由
-		api.Get("/projects/:projectId/llm/models", h.LLMHandler.GetModels)
-		api.Post("/projects/:projectId/llm/generate", h.LLMHandler.Generate)
+		h.LLMHandler.InitHandler(api)
 
 		// AI Image 生成路由
 		api.Post("/projects/:projectId/images/generate", h.AIImageHandler.Generate)
