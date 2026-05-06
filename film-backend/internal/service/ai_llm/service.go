@@ -17,6 +17,21 @@ var (
 	ErrGenerationFailed = errors.New("image generation failed")
 )
 
+//go:embed prompts/1.横版手动分段剧情提示词.md
+var _horizontal_video_prompt string
+
+//go:embed prompts/1.竖版手动分段剧情提示词.md
+var _vertical_video_prompt string
+
+//go:embed prompts/2.输出示例.md
+var _videoPrompt string
+
+// PromptType 提示词类型
+type PromptType struct {
+	Id    string `json:"id,omitempty"`
+	Title string `json:"title,omitempty"   `
+}
+
 type ImageSize string
 
 const (
@@ -58,12 +73,27 @@ type GenerationResult struct {
 type Service struct {
 	config       *config.Config
 	aiLLMService *ai.AiLLMService
+	promptTypes  []PromptType
 }
 
 func NewService(config *config.Config, aiLLMService *ai.AiLLMService) *Service {
 	return &Service{
 		config:       config,
 		aiLLMService: aiLLMService,
+		promptTypes: []PromptType{
+			{
+				Id:    "chat",
+				Title: "对话",
+			},
+			{
+				Id:    "horizontal_video_prompt",
+				Title: "横版视频",
+			},
+			{
+				Id:    "vertical_video_prompt",
+				Title: "竖版视频",
+			},
+		},
 	}
 }
 
@@ -83,23 +113,16 @@ func (s *Service) GetModels(ctx context.Context) []aioptions.Model {
 	return s.aiLLMService.GetModels()
 }
 
-// 1. 嵌入单个文本文件
-//
-//go:embed prompts/1.横版手动分段剧情提示词.md
-var horizontal_video_prompt string
-
-//go:embed prompts/1.竖版手动分段剧情提示词.md
-var vertical_video_prompt string
-
-//go:embed prompts/2.输出示例.md
-var _videoPrompt string
+func (s *Service) GetPromptTypes() []PromptType {
+	return s.promptTypes
+}
 
 func (s *Service) GetVideoPrompt(ctx context.Context, opts aioptions.ChatRequest) (*aioptions.ChatResult, error) {
 	sb := strings.Builder{}
 	if opts.PromptType == "horizontal_video_prompt" {
-		sb.WriteString(horizontal_video_prompt)
+		sb.WriteString(_horizontal_video_prompt)
 	} else {
-		sb.WriteString(vertical_video_prompt)
+		sb.WriteString(_vertical_video_prompt)
 	}
 
 	sb.WriteString(opts.Prompt)

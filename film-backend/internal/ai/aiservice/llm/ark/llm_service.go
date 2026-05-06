@@ -1,4 +1,4 @@
-package openai
+package ark
 
 import (
 	"context"

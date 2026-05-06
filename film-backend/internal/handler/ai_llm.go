@@ -10,15 +10,9 @@ import (
 	"github.com/kataras/iris/v12"
 )
 
-// PromptType 提示词类型
-type PromptType struct {
-	Id    string `json:"id,omitempty"`
-	Title string `json:"title,omitempty"   `
-}
-
 type AILLMHandler struct {
 	llmSvc      *ai_llm.Service
-	promptTypes []PromptType
+	promptTypes []ai_llm.PromptType
 }
 
 type ChatRequest struct {
@@ -33,20 +27,6 @@ type ChatRequest struct {
 func NewAILLMHandler(llmSvc *ai_llm.Service) *AILLMHandler {
 	return &AILLMHandler{
 		llmSvc: llmSvc,
-		promptTypes: []PromptType{
-			{
-				Id:    "chat",
-				Title: "对话",
-			},
-			{
-				Id:    "horizontal_video_prompt",
-				Title: "横版视频",
-			},
-			{
-				Id:    "vertical_video_prompt",
-				Title: "竖版视频",
-			},
-		},
 	}
 }
 func (h *AILLMHandler) InitHandler(api iris.Party) {
@@ -90,5 +70,5 @@ func (h *AILLMHandler) GetModels(ctx iris.Context) {
 }
 
 func (h *AILLMHandler) GetPromptTypes(ctx iris.Context) {
-	validator.Success(ctx, h.promptTypes)
+	validator.Success(ctx, h.llmSvc.GetPromptTypes())
 }
