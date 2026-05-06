@@ -5,7 +5,7 @@ interface PromptState {
   prompts: Prompt[];
   categories: PromptCategory[];
   selectedPrompt: Prompt | null;
-  selectedCategoryId: string | null;
+  selectedCategoryKey: string | null;
   searchKeyword: string;
   detailModalOpen: boolean;
   versions: Array<{ version: number; content: string; createdAt: number }>;
@@ -15,7 +15,7 @@ interface PromptState {
   setPrompts: (prompts: Prompt[]) => void;
   setCategories: (categories: PromptCategory[]) => void;
   setSelectedPrompt: (prompt: Prompt | null) => void;
-  setSelectedCategoryId: (id: string | null) => void;
+  setSelectedCategoryKey: (key: string | null) => void;
   setSearchKeyword: (keyword: string) => void;
   setDetailModalOpen: (open: boolean) => void;
   setVersions: (versions: any[]) => void;
@@ -28,7 +28,7 @@ export const usePromptStore = create<PromptState>((set, get) => ({
   prompts: [],
   categories: [],
   selectedPrompt: null,
-  selectedCategoryId: null,
+  selectedCategoryKey: null,
   searchKeyword: "",
   detailModalOpen: false,
   versions: [],
@@ -54,7 +54,7 @@ export const usePromptStore = create<PromptState>((set, get) => ({
     }
   },
 
-  setSelectedCategoryId: (id) => set({ selectedCategoryId: id }),
+  setSelectedCategoryKey: (key) => set({ selectedCategoryKey: key }),
 
   setSearchKeyword: (keyword) => set({ searchKeyword: keyword }),
 

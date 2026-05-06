@@ -26,6 +26,9 @@ var _vertical_video_prompt string
 //go:embed prompts/2.输出示例.md
 var _videoPrompt string
 
+//go:embed prompts/六宫格.md
+var _six_grid_layout string
+
 // PromptType 提示词类型
 type PromptType struct {
 	Id    string `json:"id,omitempty"`
@@ -92,6 +95,10 @@ func NewService(config *config.Config, aiLLMService *ai.AiLLMService) *Service {
 			{
 				Id:    "vertical_video_prompt",
 				Title: "竖版视频",
+			},
+			{
+				Id:    "six_grid_layout",
+				Title: "六宫格",
 			},
 		},
 	}

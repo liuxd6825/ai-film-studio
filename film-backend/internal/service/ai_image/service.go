@@ -83,7 +83,7 @@ func (s *Service) NewTask(ctx context.Context, request GenerationRequest) (task 
 	}
 	prompt := request.Prompt
 	if request.PromptType == "six_grid_layout" {
-		prompt = _six_grid_layout + "\n" + prompt
+		prompt = "根据以下要求生图片:\n```\n" + prompt + "\n```\n" + _six_grid_layout
 	}
 
 	newTaskOptions := aioptions.NewTaskOptions{

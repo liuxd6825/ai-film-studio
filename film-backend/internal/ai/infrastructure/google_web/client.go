@@ -135,7 +135,7 @@ func (s *GoogleWebClient) generate(ctx context.Context, req GenerateRequest) (*G
 	if req.Prompt == "" {
 		return nil, ErrMissingPrompt
 	}
-	req.Model = "制作图片"
+	req.Model = "思考"
 	genType := "video"
 	if req.TaskType == aioptions.TaskTypeImage {
 		genType = "image"
