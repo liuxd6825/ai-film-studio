@@ -69,9 +69,7 @@ func NewRouter(h *Handler) *iris.Application {
 		h.LLMHandler.InitHandler(api)
 
 		// AI Image 生成路由
-		api.Post("/projects/:projectId/images/generate", h.AIImageHandler.Generate)
-		api.Get("/projects/:projectId/images/models", h.AIImageHandler.GetModels)
-		api.Get("/projects/:projectId/images/task", h.AIImageHandler.GetTask)
+		h.AIImageHandler.InitHandler(api)
 
 		// AI 视频生成路由
 		api.Post("/projects/:projectId/videos/generate", h.AIVideoHandler.Generate)
@@ -241,10 +239,6 @@ func NewRouter(h *Handler) *iris.Application {
 
 		// Prompt Category 路由
 		api.Get("/prompt-categories", h.Category.List)
-		api.Post("/prompt-categories", h.Category.Create)
-		api.Get("/prompt-categories/:id", h.Category.Get)
-		api.Put("/prompt-categories/:id", h.Category.Update)
-		api.Delete("/prompt-categories/:id", h.Category.Delete)
 	}
 
 	return app
