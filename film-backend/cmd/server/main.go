@@ -213,6 +213,7 @@ func main() {
 	shotService := shotSvc.NewService(shotRepo, agentRunner)
 	keyframeService := keyframeSvc.NewService(shotKeyframeRepo, shotRepo, agentRunner)
 	promptService := promptSvc.NewPromptService(promptRepo)
+	promptAdminService := promptSvc.NewPromptAdminService(promptRepo)
 
 	dictionaryHandler := handler.NewDictionaryHandler(dictionaryService)
 	characterHandler := handler.NewCharacterHandler(characterService)
@@ -225,6 +226,7 @@ func main() {
 	shotHandler := handler.NewShotHandler(shotService)
 	keyframeHandler := handler.NewKeyframeHandler(keyframeService)
 	promptHandler := handler.NewPromptHandler(promptService)
+	promptAdminHandler := handler.NewPromptAdminHandler(promptAdminService)
 	categoryHandler := handler.NewCategoryHandler()
 
 	aimodelService := aimodelSvc.NewService()
@@ -285,6 +287,7 @@ func main() {
 		shotHandler,
 		keyframeHandler,
 		promptHandler,
+		promptAdminHandler,
 		categoryHandler,
 		imageHandler,
 		aimodelHandler,

@@ -48,7 +48,7 @@ func (r *PromptRepository) GetByIDAny(ctx context.Context, id uuid.UUID) (*model
 
 func (r *PromptRepository) ListByProjectID(ctx context.Context, projectID uuid.UUID, tag string) ([]model.Prompt, error) {
 	var prompts []model.Prompt
-	query := r.db.WithContext(ctx).Where("project_id = ? AND is_latest = ?", projectID, true)
+	query := r.db.WithContext(ctx).Where("project_id = ? AND is_latest = ? AND is_system = ?", projectID, true, false)
 	if tag != "" {
 		query = query.Where("tags LIKE ?", "%"+tag+"%")
 	}
@@ -101,6 +101,23 @@ func ParseVariables(variablesJSON string) ([]model.PromptVariable, error) {
 }
 
 func (r *PromptRepository) ListByCategoryKey(ctx context.Context, projectID uuid.UUID, categoryKey string) ([]model.Prompt, error) {
+	var prompts []model.Prompt
+	query := r.db.WithContext(ctx).Where("project_id = ? AND category_key = ? AND is_latest = ? AND is_system = ?", projectID, categoryKey, true, false)
+	err := query.Order("updated_at DESC").Find(&prompts).Error
+	return prompts, err
+}
+
+func (r *PromptRepository) ListByProjectIDWithSystem(ctx context.Context, projectID uuid.UUID, tag string) ([]model.Prompt, error) {
+	var prompts []model.Prompt
+	query := r.db.WithContext(ctx).Where("project_id = ? AND is_latest = ?", projectID, true)
+	if tag != "" {
+		query = query.Where("tags LIKE ?", "%"+tag+"%")
+	}
+	err := query.Order("updated_at DESC").Find(&prompts).Error
+	return prompts, err
+}
+
+func (r *PromptRepository) ListByCategoryKeyWithSystem(ctx context.Context, projectID uuid.UUID, categoryKey string) ([]model.Prompt, error) {
 	var prompts []model.Prompt
 	query := r.db.WithContext(ctx).Where("project_id = ? AND category_key = ? AND is_latest = ?", projectID, categoryKey, true)
 	err := query.Order("updated_at DESC").Find(&prompts).Error

@@ -40,6 +40,7 @@ type Handler struct {
 	Shot           *ShotHandler
 	Keyframe       *KeyframeHandler
 	Prompt         *PromptHandler
+	PromptAdmin   *PromptAdminHandler
 	Category       *CategoryHandler
 	AIImageHandler *AIImageHandler
 	AIModel        *AIModelHandler
@@ -81,6 +82,7 @@ func NewHandler(
 	shotHandler *ShotHandler,
 	keyframeHandler *KeyframeHandler,
 	promptHandler *PromptHandler,
+	promptAdminHandler *PromptAdminHandler,
 	categoryHandler *CategoryHandler,
 	aiImageHandler *AIImageHandler,
 	aiModelHandler *AIModelHandler,
@@ -121,6 +123,7 @@ func NewHandler(
 		Shot:           shotHandler,
 		Keyframe:       keyframeHandler,
 		Prompt:         promptHandler,
+		PromptAdmin:   promptAdminHandler,
 		Category:       categoryHandler,
 		AIImageHandler: aiImageHandler,
 		AIModel:        aiModelHandler,

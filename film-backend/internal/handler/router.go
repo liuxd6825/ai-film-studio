@@ -239,6 +239,18 @@ func NewRouter(h *Handler) *iris.Application {
 
 		// Prompt Category 路由
 		api.Get("/prompt-categories", h.Category.List)
+
+		// Admin Prompt 路由（包含系统提示词）
+		adminPrompts := api.Party("/admin/prompts")
+		{
+			adminPrompts.Get("/", h.PromptAdmin.List)
+			adminPrompts.Post("/", h.PromptAdmin.Create)
+			adminPrompts.Get("/:id", h.PromptAdmin.Get)
+			adminPrompts.Put("/:id", h.PromptAdmin.Update)
+			adminPrompts.Delete("/:id", h.PromptAdmin.Delete)
+			adminPrompts.Get("/:id/versions", h.PromptAdmin.GetVersions)
+			adminPrompts.Post("/:id/restore/:version", h.PromptAdmin.RestoreVersion)
+		}
 	}
 
 	return app

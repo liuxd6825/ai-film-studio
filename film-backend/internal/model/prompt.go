@@ -11,11 +11,12 @@ type Prompt struct {
 	ProjectID  uuid.UUID `gorm:"type:char(36);index" json:"projectId"`
 	Title      string    `gorm:"size:255;not null" json:"title"`
 	Content    string    `gorm:"type:text" json:"content"`
-	CategoryKey string `gorm:"column:category_key;size:50" json:"categoryKey"`
+	CategoryKey string   `gorm:"column:category_key;size:50" json:"categoryKey"`
 	Tags       string    `gorm:"type:text" json:"tags"`
 	Variables  string    `gorm:"type:text" json:"variables"`
 	Version    int       `gorm:"default:1" json:"version"`
 	IsLatest   bool      `gorm:"default:true" json:"isLatest"`
+	IsSystem   bool      `gorm:"default:false" json:"isSystem"`
 	CreatedAt  time.Time `gorm:"createdAt" json:"createdAt"`
 	UpdatedAt  time.Time `gorm:"createdAt" json:"updatedAt"`
 }
