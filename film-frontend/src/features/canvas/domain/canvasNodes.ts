@@ -125,6 +125,7 @@ export interface ImageEditNodeData extends NodeImageData {
   mode?: 'undecided' | 'upload' | 'prompt';
   sourceType?: 'upload' | 'generated' | 'reference';
   sourceFileName?: string | null;
+  promptType?: string;
 }
 
 export interface StoryboardFrameItem {

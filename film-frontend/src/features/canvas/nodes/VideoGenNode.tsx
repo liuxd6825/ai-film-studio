@@ -20,6 +20,7 @@ import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
 import { NodeTextarea } from "../components/NodeTextarea";
 import { VideoSettingCard } from "../components/VideoSettingCard";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 const RESOLUTION_OPTIONS: { value: VideoResolution; label: string }[] = [
   { value: "720p", label: "720p" },
@@ -132,6 +133,7 @@ export const VideoGenNode = memo(function VideoGenNode({
   const [taskProgress, setTaskProgress] = useState(data.taskProgress || 0);
 
   const [isUploading, setIsUploading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const effectiveMode = data.mode || 'prompt';
@@ -623,11 +625,11 @@ export const VideoGenNode = memo(function VideoGenNode({
       "isGenerating:",
       isGenerating,
     );
-    if (!window.confirm("确定要取消正在生成的任务吗？")) {
-      console.log("[handleCancel] user cancelled confirm");
-      return;
-    }
+    setShowCancelConfirm(true);
+  }, [data.taskId, isGenerating]);
 
+  const handleConfirmCancel = useCallback(async () => {
+    setShowCancelConfirm(false);
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
@@ -1055,6 +1057,15 @@ export const VideoGenNode = memo(function VideoGenNode({
           />
         )}
       </div>
+      <ConfirmDialog
+        open={showCancelConfirm}
+        title="确认取消"
+        message="确定要取消正在生成的任务吗？"
+        confirmText="确定"
+        confirmType="danger"
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={handleConfirmCancel}
+      />
     </>
   );
 });

@@ -10,6 +10,7 @@ import { useCanvasStore } from "../stores/canvasStore";
 import { llmApi, type LLMModel, type PromptType } from "../../../api/llmApi";
 import { NodeToolbar } from "../ui/NodeToolbar";
 import { NodeTextarea } from "../components/NodeTextarea";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 const MAX_PREVIEW_LENGTH = 100;
 
@@ -106,6 +107,7 @@ export const TextNode = memo(function TextNode({
   const [taskProgress, setTaskProgress] = useState(0);
   const [availableAIModels, setAvailableAIModels] = useState<LLMModel[]>([]);
   const [availablePromptTypes, setAvailablePromptTypes] = useState<PromptType[]>([]);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -347,9 +349,11 @@ export const TextNode = memo(function TextNode({
   }, [projectId, canvasId, id, data.prompt, data.aiModel, data.promptType, updateNodeData]);
 
   const handleCancel = useCallback(() => {
-    if (!window.confirm("确定要取消正在生成的任务吗？")) {
-      return;
-    }
+    setShowCancelConfirm(true);
+  }, []);
+
+  const handleConfirmCancel = useCallback(() => {
+    setShowCancelConfirm(false);
     setIsGenerating(false);
     setTaskStatus("cancelled");
   }, []);
@@ -622,6 +626,15 @@ export const TextNode = memo(function TextNode({
           className="w-3 h-3"
         />
       </div>
+      <ConfirmDialog
+        open={showCancelConfirm}
+        title="确认取消"
+        message="确定要取消正在生成的任务吗？"
+        confirmText="确定"
+        confirmType="danger"
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={handleConfirmCancel}
+      />
     </>
   );
 });

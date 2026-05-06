@@ -8,6 +8,7 @@ export interface GenerateImageRequest {
   aspectRatio?: string;
   canvasId?: string;
   nodeId?: string;
+  promptType?: string;
 }
 
 export interface GenerateImageResponse {
@@ -21,6 +22,11 @@ export interface ImageAiModel {
   title: string;
 }
 
+export interface PromptType {
+  id: string;
+  title: string;
+}
+
 export const imageApi = {
   generate: (projectId: string, data: GenerateImageRequest) =>
     api.post<GenerateImageResponse>(
@@ -30,4 +36,7 @@ export const imageApi = {
 
   getModels: (projectId: string): Promise<ImageAiModel[]> =>
     api.get<ImageAiModel[]>(`/api/v1/projects/${projectId}/images/models`),
+
+  getPromptTypes: (projectId: string): Promise<PromptType[]> =>
+    api.get<PromptType[]>(`/api/v1/projects/${projectId}/images/prompt-types`),
 };
