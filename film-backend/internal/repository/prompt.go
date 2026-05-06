@@ -46,12 +46,9 @@ func (r *PromptRepository) GetByIDAny(ctx context.Context, id uuid.UUID) (*model
 	return &prompt, err
 }
 
-func (r *PromptRepository) ListByProjectID(ctx context.Context, projectID uuid.UUID, categoryID uuid.UUID, tag string) ([]model.Prompt, error) {
+func (r *PromptRepository) ListByProjectID(ctx context.Context, projectID uuid.UUID, tag string) ([]model.Prompt, error) {
 	var prompts []model.Prompt
 	query := r.db.WithContext(ctx).Where("project_id = ? AND is_latest = ?", projectID, true)
-	if categoryID != uuid.Nil {
-		query = query.Where("category_id = ?", categoryID)
-	}
 	if tag != "" {
 		query = query.Where("tags LIKE ?", "%"+tag+"%")
 	}
@@ -103,9 +100,9 @@ func ParseVariables(variablesJSON string) ([]model.PromptVariable, error) {
 	return vars, err
 }
 
-func (r *PromptRepository) ListByCategoryID(ctx context.Context, projectID, categoryID uuid.UUID) ([]model.Prompt, error) {
+func (r *PromptRepository) ListByCategoryKey(ctx context.Context, projectID uuid.UUID, categoryKey string) ([]model.Prompt, error) {
 	var prompts []model.Prompt
-	query := r.db.WithContext(ctx).Where("project_id = ? AND category_id = ? AND is_latest = ?", projectID, categoryID, true)
+	query := r.db.WithContext(ctx).Where("project_id = ? AND category_key = ? AND is_latest = ?", projectID, categoryKey, true)
 	err := query.Order("updated_at DESC").Find(&prompts).Error
 	return prompts, err
 }
