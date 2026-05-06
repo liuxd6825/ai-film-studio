@@ -247,12 +247,11 @@ class GeminiPage(BasePage):
         await self.page.wait_for_timeout(1000)
 
         pending_count = 0
-        while pending_count <= 20:
+        while pending_count <= 1800:
             pending = self.page.locator("pending-request")
             if await pending.count() > 0:
                 pending_count += 1
-                print(f"[GeminiPage] 检测到 pending-request ({pending_count}/20)，继续等待...")
-                if pending_count > 20:
+                if pending_count > 1800:
                     return {
                         "data_id": "",
                         "workspace": "",
