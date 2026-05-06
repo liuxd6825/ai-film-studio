@@ -28,12 +28,12 @@ func NewPromptService(repo *repository.PromptRepository) *PromptService {
 }
 
 type CreatePromptRequest struct {
-	ProjectID  uuid.UUID              `json:"projectId"`
-	Title      string                 `json:"title"`
-	Content    string                 `json:"content"`
-	CategoryID uuid.UUID              `json:"categoryId"`
-	Tags       []string               `json:"tags"`
-	Variables  []model.PromptVariable `json:"variables"`
+	ProjectID   uuid.UUID              `json:"projectId"`
+	Title       string                 `json:"title"`
+	Content     string                 `json:"content"`
+	CategoryKey string                 `json:"categoryKey"`
+	Tags        []string               `json:"tags"`
+	Variables   []model.PromptVariable `json:"variables"`
 }
 
 func (s *PromptService) Create(ctx context.Context, req *CreatePromptRequest) (*model.Prompt, error) {
@@ -49,15 +49,15 @@ func (s *PromptService) Create(ctx context.Context, req *CreatePromptRequest) (*
 	}
 
 	prompt := &model.Prompt{
-		ID:         uuid.New(),
-		ProjectID:  req.ProjectID,
-		Title:      req.Title,
-		Content:    req.Content,
-		CategoryID: req.CategoryID,
-		Tags:       strings.Join(req.Tags, ","),
-		Variables:  varsJSON,
-		Version:    1,
-		IsLatest:   true,
+		ID:          uuid.New(),
+		ProjectID:   req.ProjectID,
+		Title:       req.Title,
+		Content:     req.Content,
+		CategoryKey: req.CategoryKey,
+		Tags:        strings.Join(req.Tags, ","),
+		Variables:   varsJSON,
+		Version:     1,
+		IsLatest:    true,
 	}
 
 	if err := s.repo.Create(ctx, prompt); err != nil {
@@ -84,16 +84,16 @@ func (s *PromptService) GetByID(ctx context.Context, id uuid.UUID) (*model.Promp
 	return prompt, err
 }
 
-func (s *PromptService) List(ctx context.Context, projectID, categoryID uuid.UUID, tag string) ([]model.Prompt, error) {
-	return s.repo.ListByProjectID(ctx, projectID, categoryID, tag)
+func (s *PromptService) List(ctx context.Context, projectID uuid.UUID, categoryKey, tag string) ([]model.Prompt, error) {
+	return s.repo.ListByProjectID(ctx, projectID, categoryKey, tag)
 }
 
 type UpdatePromptRequest struct {
-	Title      string                 `json:"title"`
-	Content    string                 `json:"content"`
-	CategoryID uuid.UUID              `json:"categoryId"`
-	Tags       []string               `json:"tags"`
-	Variables  []model.PromptVariable `json:"variables"`
+	Title       string                 `json:"title"`
+	Content     string                 `json:"content"`
+	CategoryKey string                 `json:"categoryKey"`
+	Tags        []string               `json:"tags"`
+	Variables   []model.PromptVariable `json:"variables"`
 }
 
 func (s *PromptService) Update(ctx context.Context, id uuid.UUID, req *UpdatePromptRequest) (*model.Prompt, error) {
@@ -120,15 +120,15 @@ func (s *PromptService) Update(ctx context.Context, id uuid.UUID, req *UpdatePro
 	varsJSON, _ := marshalVariables(vars)
 
 	newPrompt := &model.Prompt{
-		ID:         uuid.New(),
-		ProjectID:  prompt.ProjectID,
-		Title:      req.Title,
-		Content:    req.Content,
-		CategoryID: req.CategoryID,
-		Tags:       strings.Join(req.Tags, ","),
-		Variables:  varsJSON,
-		Version:    newVersion,
-		IsLatest:   true,
+		ID:          uuid.New(),
+		ProjectID:   prompt.ProjectID,
+		Title:       req.Title,
+		Content:     req.Content,
+		CategoryKey: req.CategoryKey,
+		Tags:        strings.Join(req.Tags, ","),
+		Variables:   varsJSON,
+		Version:     newVersion,
+		IsLatest:    true,
 	}
 
 	if err := s.repo.Create(ctx, newPrompt); err != nil {
