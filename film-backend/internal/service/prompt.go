@@ -85,7 +85,10 @@ func (s *PromptService) GetByID(ctx context.Context, id uuid.UUID) (*model.Promp
 }
 
 func (s *PromptService) List(ctx context.Context, projectID uuid.UUID, categoryKey, tag string) ([]model.Prompt, error) {
-	return s.repo.ListByProjectID(ctx, projectID, categoryKey, tag)
+	if categoryKey != "" {
+		return s.repo.ListByCategoryKey(ctx, projectID, categoryKey)
+	}
+	return s.repo.ListByProjectID(ctx, projectID, tag)
 }
 
 type UpdatePromptRequest struct {
@@ -190,15 +193,15 @@ func (s *PromptService) RestoreVersion(ctx context.Context, promptID uuid.UUID, 
 	varsJSON, _ := marshalVariables(vars)
 
 	newPrompt := &model.Prompt{
-		ID:         uuid.New(),
-		ProjectID:  currentPrompt.ProjectID,
-		Title:      currentPrompt.Title,
-		Content:    oldVersion.Content,
-		CategoryID: currentPrompt.CategoryID,
-		Tags:       currentPrompt.Tags,
-		Variables:  varsJSON,
-		Version:    newVersionNum,
-		IsLatest:   true,
+		ID:          uuid.New(),
+		ProjectID:   currentPrompt.ProjectID,
+		Title:       currentPrompt.Title,
+		Content:     oldVersion.Content,
+		CategoryKey: currentPrompt.CategoryKey,
+		Tags:        currentPrompt.Tags,
+		Variables:   varsJSON,
+		Version:     newVersionNum,
+		IsLatest:    true,
 	}
 
 	if err := s.repo.Create(ctx, newPrompt); err != nil {

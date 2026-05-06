@@ -123,7 +123,6 @@ func main() {
 	shotRepo := repository.NewShotRepository(db)
 	shotKeyframeRepo := repository.NewShotKeyframeRepository(db)
 	promptRepo := repository.NewPromptRepository(db)
-	categoryRepo := repository.NewCategoryRepository(db)
 
 	if err := initDefaultUser(db, orgRepo, userRepo); err != nil {
 		logging.Fatal("failed to initialize default user: ", err)
@@ -214,7 +213,6 @@ func main() {
 	shotService := shotSvc.NewService(shotRepo, agentRunner)
 	keyframeService := keyframeSvc.NewService(shotKeyframeRepo, shotRepo, agentRunner)
 	promptService := promptSvc.NewPromptService(promptRepo)
-	categoryService := promptSvc.NewCategoryService(categoryRepo)
 
 	dictionaryHandler := handler.NewDictionaryHandler(dictionaryService)
 	characterHandler := handler.NewCharacterHandler(characterService)
@@ -227,7 +225,7 @@ func main() {
 	shotHandler := handler.NewShotHandler(shotService)
 	keyframeHandler := handler.NewKeyframeHandler(keyframeService)
 	promptHandler := handler.NewPromptHandler(promptService)
-	categoryHandler := handler.NewCategoryHandler(categoryService)
+	categoryHandler := handler.NewCategoryHandler()
 
 	aimodelService := aimodelSvc.NewService()
 	aimodelHandler := handler.NewAIModelHandler(aimodelService)
