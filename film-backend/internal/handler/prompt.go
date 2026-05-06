@@ -20,12 +20,12 @@ func NewPromptHandler(svc *service.PromptService) *PromptHandler {
 }
 
 type CreatePromptRequest struct {
-	ProjectID  string                 `json:"projectId"`
-	Title      string                 `json:"title"`
-	Content    string                 `json:"content"`
-	CategoryID string                 `json:"categoryId"`
-	Tags       []string               `json:"tags"`
-	Variables  []model.PromptVariable `json:"variables"`
+	ProjectID   string                 `json:"projectId"`
+	Title       string                 `json:"title"`
+	Content     string                 `json:"content"`
+	CategoryKey string                 `json:"categoryKey"`
+	Tags        []string               `json:"tags"`
+	Variables   []model.PromptVariable `json:"variables"`
 }
 
 func (h *PromptHandler) Create(ctx iris.Context) {
@@ -43,15 +43,13 @@ func (h *PromptHandler) Create(ctx iris.Context) {
 		return
 	}
 
-	categoryID, _ := uuid.Parse(req.CategoryID)
-
 	prompt, err := h.svc.Create(ctx, &service.CreatePromptRequest{
-		ProjectID:  projectID,
-		Title:      req.Title,
-		Content:    req.Content,
-		CategoryID: categoryID,
-		Tags:       req.Tags,
-		Variables:  req.Variables,
+		ProjectID:   projectID,
+		Title:       req.Title,
+		Content:     req.Content,
+		CategoryKey: req.CategoryKey,
+		Tags:        req.Tags,
+		Variables:   req.Variables,
 	})
 	if err != nil {
 		ctx.StatusCode(500)
@@ -87,9 +85,9 @@ func (h *PromptHandler) Get(ctx iris.Context) {
 }
 
 type ListPromptRequest struct {
-	ProjectID  string `url:"projectId"`
-	CategoryID string `url:"categoryId"`
-	Tag        string `url:"tag"`
+	ProjectID   string `url:"projectId"`
+	CategoryKey string `url:"categoryKey"`
+	Tag         string `url:"tag"`
 }
 
 func (h *PromptHandler) List(ctx iris.Context) {
@@ -107,9 +105,7 @@ func (h *PromptHandler) List(ctx iris.Context) {
 		return
 	}
 
-	categoryID, _ := uuid.Parse(req.CategoryID)
-
-	prompts, err := h.svc.List(ctx, projectID, categoryID, req.Tag)
+	prompts, err := h.svc.List(ctx, projectID, req.CategoryKey, req.Tag)
 	if err != nil {
 		ctx.StatusCode(500)
 		ctx.JSON(iris.Map{"code": 500, "message": err.Error()})
@@ -120,11 +116,11 @@ func (h *PromptHandler) List(ctx iris.Context) {
 }
 
 type UpdatePromptRequest struct {
-	Title      string                 `json:"title"`
-	Content    string                 `json:"content"`
-	CategoryID string                 `json:"categoryId"`
-	Tags       []string               `json:"tags"`
-	Variables  []model.PromptVariable `json:"variables"`
+	Title       string                 `json:"title"`
+	Content     string                 `json:"content"`
+	CategoryKey string                 `json:"categoryKey"`
+	Tags        []string               `json:"tags"`
+	Variables   []model.PromptVariable `json:"variables"`
 }
 
 func (h *PromptHandler) Update(ctx iris.Context) {
@@ -143,14 +139,12 @@ func (h *PromptHandler) Update(ctx iris.Context) {
 		return
 	}
 
-	categoryID, _ := uuid.Parse(req.CategoryID)
-
 	prompt, err := h.svc.Update(ctx, id, &service.UpdatePromptRequest{
-		Title:      req.Title,
-		Content:    req.Content,
-		CategoryID: categoryID,
-		Tags:       req.Tags,
-		Variables:  req.Variables,
+		Title:       req.Title,
+		Content:     req.Content,
+		CategoryKey: req.CategoryKey,
+		Tags:        req.Tags,
+		Variables:   req.Variables,
 	})
 	if errors.Is(err, service.ErrPromptNotFound) {
 		ctx.StatusCode(404)
