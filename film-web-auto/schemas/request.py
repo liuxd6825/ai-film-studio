@@ -31,7 +31,7 @@ class ImageGenerateBatchRequest(BaseModel):
 
 
 class GeminiImageGenerateRequest(BaseModel):
-    model: Optional[str] = "制作图片"
+    model: Optional[str] = "快速"
     files_url: Optional[list[str]] = None
     prompt: Optional[str] = None
     workspace: Optional[str] = None

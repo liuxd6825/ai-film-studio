@@ -5,7 +5,6 @@ from dao.task_result import TaskResultDAO
 from models.task import Task
 from models.task_result import TaskResult
 
-
 class TaskService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -39,7 +38,21 @@ class TaskService:
         return await self.task_dao.update(task_id, task_data)
     
     async def update_task_status(self, task_id: str, status: str, desc: str = None) -> Optional[Task]:
-        return await self.task_dao.update_status(task_id, status, desc)
+        task = await self.task_dao.get_by_id(task_id)
+        if not task:
+            return None
+
+        task = await self.task_dao.update_status(task_id, status, desc)
+
+        if task and task.request_id:
+            from services.client_request_service import ClientRequestService
+            client_request_service = ClientRequestService(self.session)
+            request_data = {"status": status}
+            if desc is not None:
+                request_data["desc"] = desc
+            await client_request_service.update_client_request(task.request_id, request_data)
+
+        return task
     
     async def delete_task(self, task_id: str) -> bool:
         return await self.task_dao.delete(task_id)

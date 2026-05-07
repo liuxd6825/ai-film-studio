@@ -9,7 +9,7 @@ class ClientRequest(Base):
     id = Column(String(256), primary_key=True)
     workspace = Column(String(64), nullable=True, index=True)
     status = Column(String(32), nullable=True, index=True)
-    desc = Column(String(512), nullable=True)
+    desc = Column(Text, nullable=True)
     system = Column(String(128), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
