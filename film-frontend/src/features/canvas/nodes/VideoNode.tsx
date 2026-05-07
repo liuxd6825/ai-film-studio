@@ -8,6 +8,7 @@ import { canvasFileApi } from "../../../api/canvasFileApi";
 import { KeyframeModal } from "../ui/KeyframeModal";
 import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
+import { EditableNodeTitle } from "../components/EditableNodeTitle";
 
 interface VideoNodeData extends VideoUploadNodeData {
   onVideoChange?: (
@@ -270,9 +271,12 @@ export const VideoNode = memo(function VideoNode({
         onPaste={handlePaste}
       >
         <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-            {data.displayName || "视频"}
-          </span>
+          <EditableNodeTitle
+              nodeType="视频"
+              title={data.displayName || ""}
+              onSave={(newTitle) => updateNodeData(id, { displayName: newTitle })}
+              maxLength={50}
+            />
           {data.sourceFileName && (
             <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[100px]">
               {data.sourceFileName}
