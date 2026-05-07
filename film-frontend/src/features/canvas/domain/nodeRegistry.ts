@@ -44,20 +44,6 @@ export interface CanvasNodeDefinition<
   createDefaultData: () => TData;
 }
 
-const DEFAULT_NODE_DISPLAY_NAME: Record<string, string> = {
-  uploadNode: "图片",
-  imageNode: "图片",
-  videoGenNode: "视频",
-  videoUploadNode: "视频",
-  exportImageNode: "导出图片",
-  textAnnotationNode: "文本标注",
-  groupNode: "分组",
-  storyboardNode: "故事板",
-  storyboardGenNode: "故事板生成",
-  textNode: "文本",
-
-};
-
 const uploadNodeDefinition: CanvasNodeDefinition<UploadImageNodeData> = {
   type: CANVAS_NODE_TYPES.upload,
   menuLabelKey: "node.menu.uploadImage",
@@ -76,7 +62,7 @@ const uploadNodeDefinition: CanvasNodeDefinition<UploadImageNodeData> = {
     },
   },
   createDefaultData: () => ({
-    displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.upload],
+    displayName: "",
     imageUrl: null,
     previewImageUrl: null,
     aspectRatio: "1:1",
@@ -103,7 +89,7 @@ const imageEditNodeDefinition: CanvasNodeDefinition<ImageEditNodeData> = {
     },
   },
   createDefaultData: () => ({
-    displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.imageEdit],
+    displayName: "",
     imageUrl: null,
     previewImageUrl: null,
     aspectRatio: DEFAULT_ASPECT_RATIO,
@@ -139,7 +125,7 @@ const exportImageNodeDefinition: CanvasNodeDefinition<ExportImageNodeData> = {
     },
   },
   createDefaultData: () => ({
-    displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.exportImage],
+    displayName: "",
     imageUrl: null,
     previewImageUrl: null,
     aspectRatio: DEFAULT_ASPECT_RATIO,
@@ -166,8 +152,8 @@ const groupNodeDefinition: CanvasNodeDefinition<GroupNodeData> = {
     },
   },
   createDefaultData: () => ({
-    displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.group],
-    label: "组",
+    displayName: "",
+    label: "",
   }),
 };
 
@@ -190,7 +176,7 @@ const textAnnotationNodeDefinition: CanvasNodeDefinition<TextAnnotationNodeData>
       },
     },
     createDefaultData: () => ({
-      displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.textAnnotation],
+      displayName: "",
       content: "",
     }),
   };
@@ -214,7 +200,7 @@ const storyboardSplitDefinition: CanvasNodeDefinition<StoryboardSplitNodeData> =
       },
     },
     createDefaultData: () => ({
-      displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.storyboardSplit],
+      displayName: "",
       aspectRatio: DEFAULT_ASPECT_RATIO,
       frameAspectRatio: DEFAULT_ASPECT_RATIO,
       gridRows: 2,
@@ -254,7 +240,7 @@ const storyboardGenNodeDefinition: CanvasNodeDefinition<StoryboardGenNodeData> =
       },
     },
     createDefaultData: () => ({
-      displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.storyboardGen],
+      displayName: "",
       gridRows: 2,
       gridCols: 2,
       frames: [],
@@ -290,7 +276,7 @@ const videoGenNodeDefinition: CanvasNodeDefinition<VideoGenNodeData> = {
     },
   },
   createDefaultData: () => ({
-    displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.videoGen],
+    displayName: "",
     prompt: "",
     aspectRatio: "16:9",
     resolution: "1080p",
@@ -323,7 +309,7 @@ const videoUploadNodeDefinition: CanvasNodeDefinition<VideoUploadNodeData> = {
     },
   },
   createDefaultData: () => ({
-    displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.videoUpload],
+    displayName: "",
     videoUrl: null,
     previewVideoUrl: null,
     sourceFileName: "",
@@ -348,7 +334,7 @@ const textNodeDefinition: CanvasNodeDefinition<TextNodeData> = {
     },
   },
   createDefaultData: () => ({
-    displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.text],
+    displayName: "",
     content: "",
     prompt: "",
     aiModel: "veo",
