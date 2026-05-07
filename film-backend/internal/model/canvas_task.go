@@ -27,14 +27,6 @@ type CanvasTask struct {
 
 func (CanvasTask) TableName() string { return "canvas_task" }
 
-const (
-	TaskStatusPending    = 0
-	TaskStatusProcessing = 1
-	TaskStatusCompleted  = 2
-	TaskStatusFailed     = 3
-	TaskStatusCancelled  = 4
-)
-
 type TaskType string
 
 const (

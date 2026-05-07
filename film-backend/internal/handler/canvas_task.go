@@ -63,29 +63,27 @@ func (h *CanvasTaskHandler) GetTask(ctx iris.Context) {
 
 func (h *CanvasTaskHandler) PollTask(ctx iris.Context) {
 	taskID := ctx.Params().GetString("taskId")
-	projectID := ctx.Params().GetString("projectId")
-
-	task, err := h.taskSvc.GetTask(taskID)
-	if err != nil {
-		validator.NotFoundError(ctx, "task not found taskID is null")
-		return
-	}
-
-	if task.Status > 1 {
-		validator.Success(ctx, task)
-		return
-	}
-
-	if task.ProjectID != projectID {
-		validator.NotFoundError(ctx, "task not found projectID is null")
-		return
-	}
-
 	if task, err := h.taskSvc.PollTask(ctx, taskID); err != nil {
 		validator.InternalServerError(ctx, err)
 		return
 	} else {
-		validator.Success(ctx, task)
+		validator.Success(ctx, iris.Map{
+			"id":           task.ID,
+			"canvasId":     task.CanvasID,
+			"nodeId":       task.NodeID,
+			"projectId":    task.ProjectID,
+			"taskType":     task.TaskType,
+			"provider":     task.Provider,
+			"model":        task.Model,
+			"prompt":       task.Prompt,
+			"status":       task.Status,
+			"statusText":   task.Status.String(),
+			"resultUrl":    task.ResultURL,
+			"errorMessage": task.ErrorMessage,
+			"progress":     0,
+			"createdAt":    task.CreatedAt,
+			"updatedAt":    task.UpdatedAt,
+		})
 	}
 }
 
@@ -172,21 +170,4 @@ func (h *CanvasTaskHandler) GetNodeTaskImagesCount(ctx iris.Context) {
 	}
 
 	validator.Success(ctx, iris.Map{"count": count})
-}
-
-func statusToText(status int) string {
-	switch status {
-	case model.TaskStatusPending:
-		return "pending"
-	case model.TaskStatusProcessing:
-		return "processing"
-	case model.TaskStatusCompleted:
-		return "completed"
-	case model.TaskStatusFailed:
-		return "failed"
-	case model.TaskStatusCancelled:
-		return "cancelled"
-	default:
-		return "unknown"
-	}
 }
