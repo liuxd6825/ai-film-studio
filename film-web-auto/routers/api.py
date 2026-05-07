@@ -19,19 +19,6 @@ async def generate_image(req: ImageGenerateRequest, session: AsyncSession = Depe
     result = await api_service.generate_image(session, req)
     return JSONResponse(content=result.model_dump())
 
-
-@router.post("/video/generates")
-async def generate_videos(req: VideoGenerateBatchRequest, session: AsyncSession = Depends(get_db)):
-    result = await api_service.generate_videos(session, req)
-    return JSONResponse(content=result.model_dump())
-
-
-@router.post("/image/generates")
-async def generate_images(req: ImageGenerateBatchRequest, session: AsyncSession = Depends(get_db)):
-    result = await api_service.generate_images(session, req)
-    return JSONResponse(content=result.model_dump())
-
-
 @router.get("/request/{request_id}/result")
 async def get_request_result(request_id: str, session: AsyncSession = Depends(get_db)):
     result = await api_service.get_request_result(session, request_id)
@@ -49,7 +36,17 @@ async def generate_gemini_image(req: GeminiImageGenerateRequest, session: AsyncS
     return JSONResponse(content=result.model_dump())
 
 
-@router.post("/gemini/image/generates")
-async def generate_gemini_images(req: GeminiImageGenerateBatchRequest, session: AsyncSession = Depends(get_db)):
-    result = await api_service.generate_gemini_images(session, req)
-    return JSONResponse(content=result.model_dump())
+# @router.post("/gemini/image/generates")
+# async def generate_gemini_images(req: GeminiImageGenerateBatchRequest, session: AsyncSession = Depends(get_db)):
+#     result = await api_service.generate_gemini_images(session, req)
+#     return JSONResponse(content=result.model_dump())
+#
+# @router.post("/video/generates")
+# async def generate_videos(req: VideoGenerateBatchRequest, session: AsyncSession = Depends(get_db)):
+#     result = await api_service.generate_videos(session, req)
+#     return JSONResponse(content=result.model_dump())
+#
+# @router.post("/image/generates")
+# async def generate_images(req: ImageGenerateBatchRequest, session: AsyncSession = Depends(get_db)):
+#     result = await api_service.generate_images(session, req)
+#     return JSONResponse(content=result.model_dump())
