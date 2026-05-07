@@ -1,6 +1,7 @@
 import { memo, useState, useCallback, useMemo, useEffect } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Trash2 } from "lucide-react";
+import { EditableNodeTitle } from "../components/EditableNodeTitle";
 
 import {
   type StoryboardFrameItem,
@@ -746,9 +747,12 @@ export const StoryboardNode = memo(function StoryboardNode({
       >
       <div className="relative border-b border-gray-100 dark:border-gray-700 p-3">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-            {data.displayName || "故事板"}
-          </span>
+          <EditableNodeTitle
+            nodeType="故事板"
+            title={data.displayName || ""}
+            onSave={(newTitle) => updateNodeData(id, { displayName: newTitle })}
+            maxLength={50}
+          />
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400 dark:text-gray-500">
               {gridRows}x{gridCols} | {totalFrames}格

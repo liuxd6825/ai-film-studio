@@ -1,6 +1,7 @@
 import { memo, useState, useCallback } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Trash2 } from "lucide-react";
+import { EditableNodeTitle } from "../components/EditableNodeTitle";
 import {
   StoryboardGenNodeData,
   type StoryboardGenFrameItem,
@@ -119,9 +120,12 @@ export const StoryboardGenNode = memo(function StoryboardGenNode({
         } shadow-md`}
       >
       <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-        <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-          {data.displayName || "故事板生成"}
-        </span>
+        <EditableNodeTitle
+          nodeType="故事板生成"
+          title={data.displayName || ""}
+          onSave={(newTitle) => updateNodeData(id, { displayName: newTitle })}
+          maxLength={50}
+        />
         {isGenerating && (
           <span className="text-xs text-blue-500 dark:text-blue-400 animate-pulse">
             生成分镜中...

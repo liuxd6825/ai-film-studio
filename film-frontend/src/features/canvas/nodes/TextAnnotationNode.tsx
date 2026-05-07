@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import { TextAnnotationNodeData } from "../domain/canvasNodes";
 import { useCanvasStore } from "../stores/canvasStore";
 import { NodeToolbar } from "../ui/NodeToolbar";
+import { EditableNodeTitle } from "../components/EditableNodeTitle";
 
 interface TextAnnotationNodeDataExt extends TextAnnotationNodeData {}
 
@@ -13,6 +14,7 @@ export const TextAnnotationNode = memo(function TextAnnotationNode({
   selected,
 }: NodeProps & { data: TextAnnotationNodeDataExt }) {
   const deleteNode = useCanvasStore((s) => s.deleteNode);
+  const updateNodeData = useCanvasStore((s) => s.updateNodeData);
 
   const handleDelete = useCallback(() => {
     deleteNode(id);
@@ -39,9 +41,12 @@ export const TextAnnotationNode = memo(function TextAnnotationNode({
         } shadow-md`}
       >
         <div className="p-3 border-b border-yellow-200 dark:border-yellow-800">
-          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-            📝 {data.displayName || "文本标注"}
-          </span>
+          <EditableNodeTitle
+            nodeType="文本标注"
+            title={data.displayName || ""}
+            onSave={(newTitle) => updateNodeData(id, { displayName: newTitle })}
+            maxLength={50}
+          />
         </div>
         <div className="p-3">
           <div className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
