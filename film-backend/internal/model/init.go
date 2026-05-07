@@ -37,7 +37,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&ShotProp{},
 		&Prompt{},
 		&PromptVersion{},
-		&PromptCategory{},
 		&Canvas{},
 		&CanvasFile{},
 		&CanvasTask{},

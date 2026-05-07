@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Layout, Input, Button, List, Modal, Popconfirm, message } from "antd";
+import { Layout, Input, Button, List, Tag } from "antd";
 import {
   SearchOutlined,
   PlusOutlined,
-  DeleteOutlined,
   EditOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { Prompt, promptApi, categoryApi } from "../api/promptApi";
+import { Prompt, promptApi, PROMPT_CATEGORIES } from "../api/promptApi";
 import { usePromptStore } from "../stores/promptStore";
 import { PromptEditor } from "../components/PromptEditor";
 import { PromptViewModal } from "../components/PromptViewModal";
@@ -21,69 +20,40 @@ export const PromptPage: React.FC = () => {
 
   const {
     prompts,
-    categories,
-    selectedCategoryId,
+    selectedCategoryKey,
     searchKeyword,
     setPrompts,
-    setCategories,
     setSelectedPrompt,
-    setSelectedCategoryId,
+    setSelectedCategoryKey,
     setSearchKeyword,
     setDetailModalOpen,
   } = usePromptStore();
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
-  const [addCategoryOpen, setAddCategoryOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
 
   useEffect(() => {
     loadData();
   }, [projectId]);
 
   const loadData = () => {
-    promptApi
-      .list(projectId)
-      .then((res) => setPrompts(res))
-      .catch(console.error);
-    categoryApi
-      .list(projectId)
-      .then((res) => setCategories(res))
-      .catch(console.error);
+    if (selectedCategoryKey) {
+      promptApi.listByCategory(projectId, selectedCategoryKey).then((res) => setPrompts(res)).catch(console.error);
+    } else {
+      promptApi.list(projectId).then((res) => setPrompts(res)).catch(console.error);
+    }
   };
 
-  const filteredPrompts = prompts.filter((p) => {
-    const matchCategory =
-      !selectedCategoryId || p.categoryId === selectedCategoryId;
+  useEffect(() => {
+    loadData();
+  }, [selectedCategoryKey]);
+
+  const filteredPrompts = (prompts || []).filter((p) => {
     const matchSearch =
       !searchKeyword ||
       p.title.toLowerCase().includes(searchKeyword.toLowerCase());
-    return matchCategory && matchSearch;
+    return matchSearch;
   });
-
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) return;
-    try {
-      await categoryApi.create({ projectId, name: newCategoryName });
-      categoryApi.list(projectId).then((res) => setCategories(res));
-      setNewCategoryName("");
-      setAddCategoryOpen(false);
-    } catch (error) {
-      message.error("添加分类失败");
-    }
-  };
-
-  const handleDeleteCategory = async (id: string) => {
-    try {
-      await categoryApi.delete(id);
-      categoryApi.list(projectId).then((res) => setCategories(res));
-      if (selectedCategoryId === id) {
-        setSelectedCategoryId(null);
-      }
-    } catch (error) {
-      message.error("删除分类失败");
-    }
-  };
 
   const handleEditPrompt = (prompt: Prompt) => {
     setEditingPrompt(prompt);
@@ -106,6 +76,11 @@ export const PromptPage: React.FC = () => {
     loadData();
   };
 
+  const getCategoryName = (key: string) => {
+    const cat = PROMPT_CATEGORIES.find((c) => c.key === key);
+    return cat ? cat.name : key;
+  };
+
   return (
     <Layout style={{ height: "100vh" }}>
       <Sider
@@ -122,59 +97,35 @@ export const PromptPage: React.FC = () => {
             }}
           >
             <span style={{ fontWeight: 500 }}>分类</span>
-            <Button
-              size="small"
-              type="text"
-              icon={<PlusOutlined />}
-              onClick={() => setAddCategoryOpen(true)}
-            />
           </div>
           <div
-            onClick={() => setSelectedCategoryId(null)}
+            onClick={() => setSelectedCategoryKey(null)}
             style={{
               padding: "8px 12px",
               marginBottom: 4,
               borderRadius: 4,
               cursor: "pointer",
               background:
-                selectedCategoryId === null ? "#e6f7ff" : "transparent",
-              fontWeight: selectedCategoryId === null ? 500 : 400,
+                selectedCategoryKey === null ? "#e6f7ff" : "transparent",
+              fontWeight: selectedCategoryKey === null ? 500 : 400,
             }}
           >
             全部
           </div>
-          {categories.map((cat) => (
+          {PROMPT_CATEGORIES.map((cat) => (
             <div
-              key={cat.id}
-              onClick={() => setSelectedCategoryId(cat.id)}
+              key={cat.key}
+              onClick={() => setSelectedCategoryKey(cat.key === selectedCategoryKey ? null : cat.key)}
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
                 padding: "8px 12px",
                 marginBottom: 4,
                 borderRadius: 4,
                 cursor: "pointer",
                 background:
-                  selectedCategoryId === cat.id ? "#e6f7ff" : "transparent",
+                  selectedCategoryKey === cat.key ? "#e6f7ff" : "transparent",
               }}
             >
-              <span style={{ flex: 1 }}>{cat.name}</span>
-              <span onClick={(e) => e.stopPropagation()}>
-                <Popconfirm
-                  title="确定删除此分类?"
-                  onConfirm={() => handleDeleteCategory(cat.id)}
-                  okText="确定"
-                  cancelText="取消"
-                >
-                  <Button
-                    size="small"
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                  />
-                </Popconfirm>
-              </span>
+              <span>{cat.name}</span>
             </div>
           ))}
         </div>
@@ -235,15 +186,23 @@ export const PromptPage: React.FC = () => {
               >
                 <List.Item.Meta
                   title={
-                    <span
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleViewPrompt(item)}
-                    >
-                      {item.title}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleViewPrompt(item)}
+                      >
+                        {item.title}
+                      </span>
+                      {item.isSystem && (
+                        <Tag color="red">系统</Tag>
+                      )}
+                    </div>
                   }
                   description={
                     <div>
+                      <span style={{ marginRight: 8, color: "#999" }}>
+                        {getCategoryName(item.categoryKey)}
+                      </span>
                       {(typeof item.tags === "string"
                         ? item.tags.split(",").filter(Boolean)
                         : item.tags || []
@@ -272,25 +231,6 @@ export const PromptPage: React.FC = () => {
         prompt={editingPrompt}
         projectId={projectId}
       />
-
-      <Modal
-        title="添加分类"
-        open={addCategoryOpen}
-        onCancel={() => {
-          setAddCategoryOpen(false);
-          setNewCategoryName("");
-        }}
-        onOk={handleAddCategory}
-        okText="确定"
-        cancelText="取消"
-      >
-        <Input
-          placeholder="请输入分类名称"
-          value={newCategoryName}
-          onChange={(e) => setNewCategoryName(e.target.value)}
-          onPressEnter={handleAddCategory}
-        />
-      </Modal>
     </Layout>
   );
 };

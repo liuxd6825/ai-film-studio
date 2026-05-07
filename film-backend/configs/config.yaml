@@ -37,6 +37,20 @@ lang_models:
           use_functions: true
           input:
             - "text"
+    open_router:
+      driver_type: "openai"
+      title: "OpenRouter"
+      api_key: "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"
+      base_url: "https://openrouter.ai/api/v1/chat/completions"
+      models:
+        "openai/gpt-5.4-image-2-20260421":
+          title: "image2"
+          temperature: 1.0
+          max_tokens: 8192
+          thinking: true
+          use_functions: true
+          input:
+            - "image"
 
 image_models:
   providers:
@@ -50,6 +64,20 @@ image_models:
       title: "谷歌网"
       api_key: "11111"
       base_url: "http://127.0.0.1:18001"
+    open_router:
+      driver_type: "openai"
+      title: "OpenRouter"
+      api_key: "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"
+      base_url: "https://openrouter.ai/api/v1/chat/completions"
+      models:
+        "openai/gpt-5.4-image-2-20260421":
+          title: "image2"
+          temperature: 1.0
+          max_tokens: 8192
+          thinking: true
+          use_functions: true
+          input:
+            - "image"
 
 video_models:
   providers:
@@ -63,3 +91,19 @@ video_models:
       title: "火山引擎"
       base_url: "https://ark.cn-beijing.volces.com/api/v3"
       api_key: "0c6dab72-3465-4635-9c2a-da689d2c1e00"
+    open_router:
+      driver_type: "open_router"
+      title: "OpenRouter"
+      api_key: "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"
+      base_url: "https://openrouter.ai/api/v1/chat/completions"
+      models:
+        "bytedance/seedance-2.0-fast":
+          title: "seedance2.0"
+          temperature: 1.0
+          max_tokens: 8192
+          thinking: true
+          use_functions: true
+          input:
+            - "video"
+
+

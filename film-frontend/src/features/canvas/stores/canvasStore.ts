@@ -99,6 +99,10 @@ interface CanvasState {
   };
   keyframePanelOpen: boolean;
   keyframePanelPosition: { x: number; y: number };
+  textNodeOrderModal: {
+    isOpen: boolean;
+    targetNodeId: string | null;
+  };
 
   setProjectId: (projectId: string | null) => void;
   setCanvasName: (name: string | null) => void;
@@ -121,7 +125,7 @@ interface CanvasState {
     position: { x: number; y: number },
     data?: Partial<CanvasNodeData>,
   ) => string;
-  addEdge: (source: string, target: string) => string | null;
+  addEdge: (source: string, target: string, index?: number) => string | null;
   findNodePosition: (
     sourceNodeId: string,
     newNodeWidth: number,
@@ -175,10 +179,13 @@ interface CanvasState {
   groupNodes: (nodeIds: string[]) => string | null;
   ungroupNode: (groupNodeId: string) => boolean;
   deleteEdge: (edgeId: string) => void;
+  updateEdgeIndex: (edgeId: string, newIndex: number) => void;
   setSelectedNode: (nodeId: string | null) => void;
 
   openToolDialog: (dialog: ActiveToolDialog) => void;
   closeToolDialog: () => void;
+  openTextNodeOrderModal: (nodeId: string) => void;
+  closeTextNodeOrderModal: () => void;
   setViewportState: (viewport: Viewport) => void;
   setCanvasViewportSize: (size: { width: number; height: number }) => void;
   openImageViewer: (imageUrl: string, imageList?: string[]) => void;
@@ -623,6 +630,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   toolbarActions: {},
   keyframePanelOpen: false,
   keyframePanelPosition: { x: 100, y: 100 },
+  textNodeOrderModal: {
+    isOpen: false,
+    targetNodeId: null,
+  },
 
   setProjectId: (projectId) => {
     set({ projectId });
@@ -790,17 +801,23 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   onConnect: (connection) => {
     const sourceHandle = normalizeHandleId(connection.sourceHandle) ?? "source";
     const targetHandle = normalizeHandleId(connection.targetHandle) ?? "target";
+    const existingEdgesToTarget = get().edges.filter(e => e.target === connection.target);
+    const newIndex = (connection as { index?: number }).index ?? existingEdgesToTarget.length;
+
+    const edgeId = `e-${connection.source}-${connection.target}`;
+    const newEdge: CanvasEdge = {
+      id: edgeId,
+      source: connection.source,
+      target: connection.target,
+      sourceHandle,
+      targetHandle,
+      type: "floatingDelete",
+      index: newIndex,
+      style: { strokeWidth: 4, opacity: 1 },
+    };
+
     set((state) => ({
-      edges: addEdge<CanvasEdge>(
-        {
-          ...connection,
-          sourceHandle,
-          targetHandle,
-          type: "floatingDelete",
-          style: { strokeWidth: 4, opacity: 1 },
-        },
-        state.edges,
-      ),
+      edges: [...state.edges, newEdge],
       history: {
         past: pushSnapshot(
           state.history.past,
@@ -973,7 +990,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     return newNode.id;
   },
 
-  addEdge: (source, target) => {
+addEdge: (source, target, index) => {
     const state = get();
     const sourceNode = state.nodes.find((n) => n.id === source);
     const targetNode = state.nodes.find((n) => n.id === target);
@@ -992,6 +1009,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       return edgeId;
     }
 
+    const existingEdgesToTarget = state.edges.filter(e => e.target === target);
+    const newIndex = index ?? existingEdgesToTarget.length;
+
     const newEdge: CanvasEdge = {
       id: edgeId,
       source,
@@ -999,6 +1019,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       sourceHandle: "source",
       targetHandle: "target",
       type: "floatingDelete",
+      index: newIndex,
       style: { strokeWidth: 4, opacity: 1 },
     };
 
@@ -1748,6 +1769,14 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     });
   },
 
+  updateEdgeIndex: (edgeId: string, newIndex: number) => {
+    set((state) => ({
+      edges: state.edges.map((edge) =>
+        edge.id === edgeId ? { ...edge, index: newIndex } : edge
+      ),
+    }));
+  },
+
   setSelectedNode: (nodeId) => {
     set({ selectedNodeId: nodeId });
   },
@@ -1758,6 +1787,24 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   closeToolDialog: () => {
     set({ activeToolDialog: null });
+  },
+
+  openTextNodeOrderModal: (nodeId: string) => {
+    set({
+      textNodeOrderModal: {
+        isOpen: true,
+        targetNodeId: nodeId,
+      },
+    });
+  },
+
+  closeTextNodeOrderModal: () => {
+    set({
+      textNodeOrderModal: {
+        isOpen: false,
+        targetNodeId: null,
+      },
+    });
   },
 
   undo: () => {

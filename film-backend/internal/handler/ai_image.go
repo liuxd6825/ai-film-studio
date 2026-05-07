@@ -46,13 +46,21 @@ type GenerateImageRequest struct {
 	CanvasID        string               `json:"canvasId,omitempty"`
 	NodeID          string               `json:"nodeId,omitempty"`
 	Prompt          string               `json:"prompt" validate:"required"`
-	Model           string               `json:"model"`
+	Model           string               `json:"model" validate:"required"`
 	Resolution      aioptions.Resolution `json:"resolution"`
 	Quality         string               `json:"quality,omitempty"`
 	N               int                  `json:"n,omitempty"`
 	ReferenceImages []string             `json:"referenceImages,omitempty"`
 	AspectRatio     string               `json:"aspectRatio,omitempty"`
 	Workspace       string               `json:"workspace"`
+	PromptType      string               `json:"promptType,omitempty"`
+}
+
+func (h *AIImageHandler) InitHandler(api iris.Party) {
+	api.Post("/projects/:projectId/images/generate", h.Generate)
+	api.Get("/projects/:projectId/images/models", h.GetModels)
+	api.Get("/projects/:projectId/images/task", h.GetTask)
+	api.Get("/projects/:projectId/images/prompt-types", h.GetPromptTypes)
 }
 
 func (h *AIImageHandler) Generate(ctx iris.Context) {
@@ -85,6 +93,7 @@ func (h *AIImageHandler) Generate(ctx iris.Context) {
 		ReferenceImages: req.ReferenceImages,
 		AspectRatio:     req.AspectRatio,
 		Workspace:       req.Workspace,
+		PromptType:      req.PromptType,
 	}
 
 	aiTask, err := h.imageSvc.NewTask(context.Background(), imageReq)
@@ -143,4 +152,8 @@ func (h *AIImageHandler) GetTask(ctx iris.Context) {
 func (h *AIImageHandler) GetModels(ctx iris.Context) {
 	models := h.imageSvc.GetModels(context.Background())
 	validator.Success(ctx, models)
+}
+
+func (h *AIImageHandler) GetPromptTypes(ctx iris.Context) {
+	validator.Success(ctx, h.imageSvc.GetPromptTypes())
 }

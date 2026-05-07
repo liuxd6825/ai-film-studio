@@ -4,7 +4,7 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Eye, X, Download, Trash2, Image, Upload, RefreshCw } from "lucide-react";
 import { ImageSettingCard } from "../components/ImageSettingCard";
 import { useCanvasStore } from "../stores/canvasStore";
-import { imageApi, type ImageAiModel } from "../../../api/imageApi";
+import { imageApi, type ImageAiModel, type PromptType } from "../../../api/imageApi";
 import { canvasTaskApi } from "../../../api/canvasTaskApi";
 import { canvasFileApi } from "../../../api/canvasFileApi";
 import {
@@ -15,11 +15,14 @@ import {
   isExportImageNode,
   isImageEditNode,
   IMAGE_ASPECT_RATIOS,
+  CANVAS_NODE_TYPES,
+  TextNodeData,
 } from "../domain/canvasNodes";
 import { ImageSelectorModal } from "../ui/ImageSelectorModal";
 import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
 import { NodeTextarea } from "../components/NodeTextarea";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 const IMAGE_SIZES = [
   { value: "1024", label: "1K" },
@@ -55,6 +58,7 @@ export const ImageEditNode = memo(function ImageEditNode({
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const openImageViewer = useCanvasStore((s) => s.openImageViewer);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
+  const openTextNodeOrderModal = useCanvasStore((s) => s.openTextNodeOrderModal);
 
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
   const [showImageSelector, setShowImageSelector] = useState(false);
@@ -62,6 +66,7 @@ export const ImageEditNode = memo(function ImageEditNode({
   const [error, setError] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
   const [availableAIModels, setAvailableAIModels] = useState<ImageAiModel[]>([]);
+  const [promptTypes, setPromptTypes] = useState<PromptType[]>([]);
   const [taskStatus, setTaskStatus] = useState<ImageEditTaskStatus>(
     data.taskStatus || "idle",
   );
@@ -69,6 +74,7 @@ export const ImageEditNode = memo(function ImageEditNode({
   const [nodeFileCount, setNodeFileCount] = useState(0);
 
   const [isUploading, setIsUploading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const effectiveMode = data.mode || 'prompt';
@@ -208,6 +214,12 @@ const handleFile = useCallback(
         setAvailableAIModels(models);
         if (!models.some((m) => m.id === data.aiModel)) {
           updateNodeData(id, { aiModel: models[0]?.id || "dall-e-2" });
+        }
+      });
+      imageApi.getPromptTypes(projectId || "default").then((types) => {
+        setPromptTypes(types);
+        if (types.length > 0 && !data.promptType) {
+          updateNodeData(id, { promptType: types[0].id });
         }
       });
     }
@@ -428,8 +440,36 @@ const handleFile = useCallback(
     [projectId, id, updateNodeData],
   );
 
+  const getConnectedTextNodeContents = useCallback(() => {
+    const incomingEdges = edges
+      .filter((e) => e.target === id)
+      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+
+    const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
+    const contents: string[] = [];
+
+    for (const edge of incomingEdges) {
+      const sourceNode = nodeById.get(edge.source);
+      if (!sourceNode) continue;
+
+      if (sourceNode.type === CANVAS_NODE_TYPES.text) {
+        const textData = sourceNode.data as TextNodeData;
+        if (textData.content?.trim()) {
+          contents.push(textData.content.trim());
+        }
+      }
+    }
+
+    return contents;
+  }, [edges, id, nodes]);
+
   const handleGenerate = useCallback(async () => {
-    if (!data.prompt?.trim()) {
+    const textNodeContents = getConnectedTextNodeContents();
+    const mergedPrompt = [...textNodeContents, data.prompt]
+      .filter(Boolean)
+      .join("\n");
+
+    if (!mergedPrompt.trim()) {
       setError("请输入提示词");
       return;
     }
@@ -450,12 +490,13 @@ const handleFile = useCallback(
       else if (sizeValue === "8K") apiSize = "4K";
 
       const requestData: Parameters<typeof imageApi.generate>[1] = {
-        prompt: data.prompt,
+        prompt: mergedPrompt,
         model: data.aiModel,
         resolution: apiSize,
         aspectRatio,
         nodeId: id,
         canvasId: canvasId || "",
+        promptType: data.promptType,
       };
 
       if (incomingImages.length > 0) {
@@ -513,6 +554,7 @@ const handleFile = useCallback(
     incomingImages,
     updateNodeData,
     startPolling,
+    getConnectedTextNodeContents,
   ]);
 
   const handleCancel = useCallback(async () => {
@@ -522,11 +564,11 @@ const handleFile = useCallback(
       "isGenerating:",
       isGenerating,
     );
-    if (!window.confirm("确定要取消正在生成的任务吗？")) {
-      console.log("[handleCancel] user cancelled confirm");
-      return;
-    }
+    setShowCancelConfirm(true);
+  }, [data.taskId, isGenerating]);
 
+  const handleConfirmCancel = useCallback(async () => {
+    setShowCancelConfirm(false);
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
@@ -863,6 +905,22 @@ const handleFile = useCallback(
                 ))}
               </select>
 
+              {promptTypes.length > 0 && (
+                <select
+                  className="text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  value={data.promptType || ""}
+                  onChange={(e) =>
+                    updateNodeData(id, { promptType: e.target.value })
+                  }
+                >
+                  {promptTypes.map((pt) => (
+                    <option key={pt.id} value={pt.id}>
+                      {pt.title}
+                    </option>
+                  ))}
+                </select>
+              )}
+
               <ImageSettingCard
                 aspectRatioValue={data.requestAspectRatio || "16:9"}
                 aspectRatioOptions={ASPECT_RATIOS}
@@ -877,6 +935,14 @@ const handleFile = useCallback(
                   })
                 }
               />
+
+              <button
+                type="button"
+                onClick={() => openTextNodeOrderModal(id)}
+                className="px-3 py-1.5 rounded text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                调整顺序
+              </button>
 
               <button
                 className={`ml-auto px-4 py-1.5 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
@@ -922,7 +988,16 @@ const handleFile = useCallback(
           onClose={handleCloseImageSelector}
         />
       )}
-    </div>
+      <ConfirmDialog
+        open={showCancelConfirm}
+        title="确认取消"
+        message="确定要取消正在生成的任务吗？"
+        confirmText="确定"
+        confirmType="danger"
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={handleConfirmCancel}
+      />
+      </div>
     </>
   );
 });

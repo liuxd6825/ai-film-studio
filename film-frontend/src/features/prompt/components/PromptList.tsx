@@ -1,11 +1,10 @@
-import React, { memo, useState } from "react";
-import { Input, Select, Tag, Empty, Button, Popconfirm } from "antd";
+import { memo, useState, useEffect } from "react";
+import { Input, Select, Tag, Empty, Button } from "antd";
 import {
   SearchOutlined,
   PlusOutlined,
-  DeleteOutlined,
 } from "@ant-design/icons";
-import { promptApi, categoryApi } from "../api/promptApi";
+import { promptApi, PROMPT_CATEGORIES } from "../api/promptApi";
 import { usePromptStore } from "../stores/promptStore";
 
 interface PromptListProps {
@@ -19,51 +18,32 @@ export const PromptList = memo(function PromptList({
   onSelect,
   onCreateNew,
 }: PromptListProps) {
-  const { prompts, categories, setPrompts, setCategories, selectedPrompt } =
+  const { prompts, setPrompts, selectedPrompt, selectedCategoryKey, setSelectedCategoryKey } =
     usePromptStore();
-  const [newCategoryName, setNewCategoryName] = useState("");
+  const [searchKeyword, setSearchKeyword] = useState("");
 
-  React.useEffect(() => {
-    promptApi
-      .list(projectId)
-      .then((res) => {
+  useEffect(() => {
+    if (selectedCategoryKey) {
+      promptApi.listByCategory(projectId, selectedCategoryKey).then((res) => {
         setPrompts(res);
-      })
-      .catch(console.error);
-
-    categoryApi
-      .list(projectId)
-      .then((res) => {
-        setCategories(res);
-      })
-      .catch(console.error);
-  }, [projectId, setPrompts, setCategories]);
-
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) return;
-    try {
-      await categoryApi.create({ projectId, name: newCategoryName });
-      const updated = await categoryApi.list(projectId);
-      setCategories(updated);
-      setNewCategoryName("");
-    } catch (error) {
-      console.error("Failed to add category:", error);
+      }).catch(console.error);
+    } else {
+      promptApi.list(projectId).then((res) => {
+        setPrompts(res);
+      }).catch(console.error);
     }
-  };
+  }, [projectId, selectedCategoryKey, setPrompts]);
 
-  const handleDeleteCategory = async (id: string) => {
-    try {
-      await categoryApi.delete(id);
-      const updated = await categoryApi.list(projectId);
-      setCategories(updated);
-    } catch (error) {
-      console.error("Failed to delete category:", error);
-    }
-  };
+  const filteredPrompts = (prompts || []).filter((p) => {
+    const matchSearch =
+      !searchKeyword ||
+      p.title.toLowerCase().includes(searchKeyword.toLowerCase());
+    return matchSearch;
+  });
 
-  const categoryOptions = categories.map((cat) => ({
+  const categoryOptions = PROMPT_CATEGORIES.map((cat) => ({
     label: cat.name,
-    value: cat.id,
+    value: cat.key,
   }));
 
   return (
@@ -82,69 +62,48 @@ export const PromptList = memo(function PromptList({
         prefix={<SearchOutlined />}
         placeholder="搜索提示词"
         style={{ marginBottom: 16 }}
+        value={searchKeyword}
+        onChange={(e) => setSearchKeyword(e.target.value)}
       />
 
       <Select
         placeholder="按分类筛选"
         style={{ width: "100%", marginBottom: 16 }}
         allowClear
+        value={selectedCategoryKey}
+        onChange={(val) => setSelectedCategoryKey(val || null)}
         options={categoryOptions}
       />
 
       <div style={{ marginBottom: 8 }}>
-        <span style={{ fontSize: 12, color: "#999" }}>分类管理</span>
-      </div>
-      <div style={{ marginBottom: 8, display: "flex", gap: 8 }}>
-        <Input
-          size="small"
-          placeholder="新分类名称"
-          value={newCategoryName}
-          onChange={(e) => setNewCategoryName(e.target.value)}
-          onPressEnter={handleAddCategory}
-          style={{ flex: 1 }}
-        />
-        <Button size="small" onClick={handleAddCategory}>
-          添加
-        </Button>
+        <span style={{ fontSize: 12, color: "#999" }}>分类</span>
       </div>
       <div style={{ marginBottom: 16 }}>
-        {categories.map((cat) => (
+        {PROMPT_CATEGORIES.map((cat) => (
           <div
-            key={cat.id}
+            key={cat.key}
+            onClick={() => setSelectedCategoryKey(cat.key === selectedCategoryKey ? null : cat.key)}
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              padding: "4px 8px",
-              background: "#f5f5f5",
+              padding: "8px 12px",
+              background: selectedCategoryKey === cat.key ? "#e6f7ff" : "#f5f5f5",
               borderRadius: 4,
               marginBottom: 4,
               fontSize: 12,
+              cursor: "pointer",
             }}
           >
             <span>{cat.name}</span>
-            <Popconfirm
-              title="确定删除此分类?"
-              onConfirm={() => handleDeleteCategory(cat.id)}
-              okText="确定"
-              cancelText="取消"
-            >
-              <Button
-                size="small"
-                type="text"
-                danger
-                icon={<DeleteOutlined />}
-              />
-            </Popconfirm>
           </div>
         ))}
       </div>
 
-      {prompts.length === 0 ? (
+      {filteredPrompts.length === 0 ? (
         <Empty description="暂无提示词" />
       ) : (
         <div>
-          {prompts.map((item) => (
+          {filteredPrompts.map((item) => (
             <div
               key={item.id}
               onClick={() => onSelect(item.id)}
@@ -160,7 +119,12 @@ export const PromptList = memo(function PromptList({
                   selectedPrompt?.id === item.id ? "#1890ff" : "#f0f0f0",
               }}
             >
-              <div style={{ fontWeight: 500 }}>{item.title}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontWeight: 500 }}>{item.title}</span>
+                {item.isSystem && (
+                  <Tag color="red">系统</Tag>
+                )}
+              </div>
               <div style={{ marginTop: 4 }}>
                 {(typeof item.tags === "string"
                   ? item.tags.split(",").filter(Boolean)

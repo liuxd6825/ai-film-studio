@@ -13,11 +13,12 @@ export interface Prompt {
   projectId: string;
   title: string;
   content: string;
-  categoryId: string;
+  categoryKey: string;
   tags: string;
   variables: PromptVariable[];
   version: number;
   isLatest: boolean;
+  isSystem: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,10 +32,9 @@ export interface PromptVersion {
 }
 
 export interface PromptCategory {
-  id: string;
-  projectId: string;
+  key: string;
   name: string;
-  createdAt: string;
+  description: string;
 }
 
 const parsePrompt = (p: any): Prompt => ({
@@ -48,11 +48,22 @@ const parsePrompt = (p: any): Prompt => ({
 const parsePromptList = (list: any[]): Prompt[] => list.map(parsePrompt);
 
 export const promptApi = {
-  list: (projectId: string, categoryId?: string, tag?: string) => {
+  list: (projectId: string, categoryKey?: string, tag?: string) => {
     const params = new URLSearchParams({ projectId });
-    if (categoryId) params.append("categoryId", categoryId);
+    if (categoryKey) params.append("categoryKey", categoryKey);
     if (tag) params.append("tag", tag);
     return api.get<Prompt[]>(`/api/v1/prompts?${params}`).then(parsePromptList);
+  },
+
+  listByCategory: (projectId: string, categoryKey: string) => {
+    return api.get<any[]>(`/api/v1/prompt-category/${categoryKey}/prompts?projectId=${projectId}`).then((data): Prompt[] => {
+      if (!data || !Array.isArray(data)) return [];
+      return data.map(p => ({
+        ...p,
+        content: "",
+        variables: typeof p.variables === "string" ? JSON.parse(p.variables || "[]") : p.variables || [],
+      }));
+    });
   },
 
   get: (id: string) =>
@@ -76,19 +87,14 @@ export const promptApi = {
 };
 
 export const categoryApi = {
-  list: (projectId: string) => {
-    const params = new URLSearchParams({ projectId });
-    return api.get<PromptCategory[]>(`/api/v1/prompt-categories?${params}`);
+  list: () => {
+    return api.get<PromptCategory[]>(`/api/v1/prompt-categories`);
   },
-
-  get: (id: string) =>
-    api.get<PromptCategory>(`/api/v1/prompt-categories/${id}`),
-
-  create: (data: { projectId: string; name: string }) =>
-    api.post<PromptCategory>("/api/v1/prompt-categories", data),
-
-  update: (id: string, data: { name: string }) =>
-    api.put<PromptCategory>(`/api/v1/prompt-categories/${id}`, data),
-
-  delete: (id: string) => api.delete(`/api/v1/prompt-categories/${id}`),
 };
+
+export const PROMPT_CATEGORIES: PromptCategory[] = [
+  { key: "conversation", name: "会话", description: "对话类提示词" },
+  { key: "canvas_text", name: "画布文字", description: "画布文本节点提示词" },
+  { key: "canvas_image", name: "画布图片", description: "画布图片生成提示词" },
+  { key: "canvas_video", name: "画布视频", description: "画布视频生成提示词" },
+];

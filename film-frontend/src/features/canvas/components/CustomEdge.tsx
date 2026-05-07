@@ -41,7 +41,9 @@ export function CustomEdge({
       stroke="currentColor"
       strokeWidth={strokeWidth}
       opacity={opacity}
-      className={`react-flow__edge-path ${isHighlighted ? "edge-highlighted" : "edge-dimmed"}`}
+      className={`react-flow__edge-path ${
+        isHighlighted ? "edge-highlighted" : "edge-dimmed"
+      }`}
     />
   );
 }

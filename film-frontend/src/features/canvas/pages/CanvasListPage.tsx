@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Search, Edit2, Trash2, ExternalLink } from "lucide-react";
 import { canvasApi, type CanvasData } from "../../../api/canvasApi";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 interface EditDialogProps {
   open: boolean;
@@ -56,42 +57,6 @@ function EditDialog({ open, mode, initialName = "", onClose, onSubmit }: EditDia
             className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
           >
             {mode === "create" ? "创建" : "保存"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface DeleteConfirmDialogProps {
-  open: boolean;
-  canvasName: string;
-  onClose: () => void;
-  onConfirm: () => void;
-}
-
-function DeleteConfirmDialog({ open, canvasName, onClose, onConfirm }: DeleteConfirmDialogProps) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-96 p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">确认删除</h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          确定要删除画布 "{canvasName}" 吗？此操作不可撤销。
-        </p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            取消
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition-colors"
-          >
-            删除
           </button>
         </div>
       </div>
@@ -326,9 +291,12 @@ export function CanvasListPage() {
         onSubmit={handleSubmitEdit}
       />
 
-      <DeleteConfirmDialog
+      <ConfirmDialog
         open={deleteDialogOpen}
-        canvasName={deletingCanvas?.name || ""}
+        title="确认删除"
+        message={`确定要删除画布 "${deletingCanvas?.name || ""}" 吗？此操作不可撤销。`}
+        confirmText="删除"
+        confirmType="danger"
         onClose={() => setDeleteDialogOpen(false)}
         onConfirm={handleConfirmDelete}
       />

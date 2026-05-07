@@ -69,9 +69,7 @@ func NewRouter(h *Handler) *iris.Application {
 		h.LLMHandler.InitHandler(api)
 
 		// AI Image 生成路由
-		api.Post("/projects/:projectId/images/generate", h.AIImageHandler.Generate)
-		api.Get("/projects/:projectId/images/models", h.AIImageHandler.GetModels)
-		api.Get("/projects/:projectId/images/task", h.AIImageHandler.GetTask)
+		h.AIImageHandler.InitHandler(api)
 
 		// AI 视频生成路由
 		api.Post("/projects/:projectId/videos/generate", h.AIVideoHandler.Generate)
@@ -241,10 +239,21 @@ func NewRouter(h *Handler) *iris.Application {
 
 		// Prompt Category 路由
 		api.Get("/prompt-categories", h.Category.List)
-		api.Post("/prompt-categories", h.Category.Create)
-		api.Get("/prompt-categories/:id", h.Category.Get)
-		api.Put("/prompt-categories/:id", h.Category.Update)
-		api.Delete("/prompt-categories/:id", h.Category.Delete)
+
+		// 按分类查询提示词（包含系统提示词，无 content）
+		api.Get("/prompt-category/:categoryKey/prompts", h.PromptAdmin.ListByCategory)
+
+		// Admin Prompt 路由（包含系统提示词）
+		adminPrompts := api.Party("/admin/prompts")
+		{
+			adminPrompts.Get("/", h.PromptAdmin.List)
+			adminPrompts.Post("/", h.PromptAdmin.Create)
+			adminPrompts.Get("/:id", h.PromptAdmin.Get)
+			adminPrompts.Put("/:id", h.PromptAdmin.Update)
+			adminPrompts.Delete("/:id", h.PromptAdmin.Delete)
+			adminPrompts.Get("/:id/versions", h.PromptAdmin.GetVersions)
+			adminPrompts.Post("/:id/restore/:version", h.PromptAdmin.RestoreVersion)
+		}
 	}
 
 	return app

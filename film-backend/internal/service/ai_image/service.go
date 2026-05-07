@@ -2,6 +2,7 @@ package ai_image
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"open-film-service/internal/ai"
 	"open-film-service/internal/ai/aioptions"
@@ -16,6 +17,15 @@ var (
 	ErrGenerationFailed = errors.New("image generation failed")
 )
 
+//go:embed prompts/六宫格.md
+var _six_grid_layout string
+
+// PromptType 提示词类型
+type PromptType struct {
+	Id    string `json:"id,omitempty"`
+	Title string `json:"title,omitempty"   `
+}
+
 type GenerationRequest struct {
 	Prompt          string   `json:"prompt"`
 	Model           string   `json:"model"`
@@ -23,6 +33,7 @@ type GenerationRequest struct {
 	AspectRatio     string   `json:"aspectRatio,omitempty"`
 	Workspace       string   `json:"workspace"`
 	Resolution      string   `json:"resolution"`
+	PromptType      string   `json:"promptType"`
 }
 
 type GenerationResult struct {
@@ -41,6 +52,7 @@ type Service struct {
 	config          *config.Config
 	aiImageService  *ai.AiImageService
 	canvasTaskRepos *repository.CanvasTaskRepository
+	promptTypes     []PromptType
 }
 
 func NewService(config *config.Config, aiImageService *ai.AiImageService, canvasTaskRepos *repository.CanvasTaskRepository) *Service {
@@ -48,6 +60,16 @@ func NewService(config *config.Config, aiImageService *ai.AiImageService, canvas
 		config:          config,
 		aiImageService:  aiImageService,
 		canvasTaskRepos: canvasTaskRepos,
+		promptTypes: []PromptType{
+			{
+				Id:    "image",
+				Title: "图片",
+			},
+			{
+				Id:    "six_grid_layout",
+				Title: "六宫格",
+			},
+		},
 	}
 }
 
@@ -59,9 +81,14 @@ func (s *Service) NewTask(ctx context.Context, request GenerationRequest) (task 
 			Url:  imageUrl,
 		})
 	}
+	prompt := request.Prompt
+	if request.PromptType == "six_grid_layout" {
+		prompt = "根据以下要求生图片:\n```\n" + prompt + "\n```\n" + _six_grid_layout
+	}
+
 	newTaskOptions := aioptions.NewTaskOptions{
 		Model:     request.Model,
-		Prompt:    request.Prompt,
+		Prompt:    prompt,
 		RefItems:  refItems,
 		Workspace: request.Workspace,
 		TaskType:  aioptions.TaskTypeImage,
@@ -83,4 +110,8 @@ func (s *Service) GetTask(ctx context.Context, taskID string) (*aioptions.Task, 
 
 func (s *Service) GetModels(ctx context.Context) []aioptions.Model {
 	return s.aiImageService.GetModels()
+}
+
+func (s *Service) GetPromptTypes() []PromptType {
+	return s.promptTypes
 }

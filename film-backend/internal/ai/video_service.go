@@ -5,6 +5,7 @@ import (
 	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/ai/aiservice/video"
 	"open-film-service/internal/ai/aiservice/video/jimeng"
+	"open-film-service/internal/ai/aiservice/video/open_router"
 	"open-film-service/internal/ai/aiservice/video/volcengine"
 	"open-film-service/internal/config"
 )
@@ -21,6 +22,8 @@ func NewAiVideoService(cfg *config.ModelsConfig) *AiVideoService {
 			manage.Register(volcengine.NewVideoService(provider.APIKey, provider.BaseURL))
 		case "jimeng_web":
 			manage.Register(jimeng.NewVideoService(provider.BaseURL))
+		case "open_router":
+			manage.Register(open_router.NewVideoService(provider))
 		}
 	}
 	service := &AiVideoService{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/ai/aiservice/llm"
+	"open-film-service/internal/ai/aiservice/llm/ark"
 	"open-film-service/internal/ai/aiservice/llm/openai"
 	"open-film-service/internal/config"
 )
@@ -18,13 +19,21 @@ func NewAiLLMService(cfg *config.ModelsConfig) *AiLLMService {
 		manage: manage,
 	}
 	for _, p := range cfg.Providers {
-		if p.DriverType == "openai" {
+		switch p.DriverType {
+		case "openai":
 			if service, err := openai.NewLLMService(p); err == nil {
 				manage.Register(service)
 			} else {
 				panic(err)
 			}
+		case "ark":
+			if service, err := ark.NewLLMService(p); err == nil {
+				manage.Register(service)
+			} else {
+				panic(err)
+			}
 		}
+
 	}
 
 	return service

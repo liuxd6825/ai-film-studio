@@ -4,7 +4,7 @@ import {
   Prompt,
   PromptVariable,
   promptApi,
-  categoryApi,
+  PROMPT_CATEGORIES,
 } from "../api/promptApi";
 import { usePromptStore } from "../stores/promptStore";
 import {
@@ -44,20 +44,11 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
   projectId,
 }) => {
   const [form] = Form.useForm();
-  const { setPrompts, setCategories, categories } = usePromptStore();
+  const { setPrompts } = usePromptStore();
   const [content, setContent] = useState("");
   const [variables, setVariables] = useState<PromptVariable[]>([]);
   const [addVarModalOpen, setAddVarModalOpen] = useState(false);
   const [newVarName, setNewVarName] = useState("");
-
-  useEffect(() => {
-    categoryApi
-      .list(projectId)
-      .then((res) => {
-        setCategories(res);
-      })
-      .catch(console.error);
-  }, [projectId, setCategories]);
 
   useEffect(() => {
     if (!open) return;
@@ -65,7 +56,7 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
       form.setFieldsValue({
         title: prompt.title,
         content: prompt.content,
-        categoryId: prompt.categoryId,
+        categoryKey: prompt.categoryKey,
       });
       setContent(prompt.content);
       setVariables(prompt.variables || []);
@@ -154,9 +145,9 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
     }
   };
 
-  const categoryOptions = categories.map((cat) => ({
+  const categoryOptions = PROMPT_CATEGORIES.map((cat) => ({
     label: cat.name,
-    value: cat.id,
+    value: cat.key,
   }));
 
   return (
@@ -308,7 +299,7 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
               </Card>
             )}
           </Form.Item>
-          <Form.Item name="categoryId" label="分类">
+          <Form.Item name="categoryKey" label="分类">
             <Select
               allowClear
               placeholder="选择分类"

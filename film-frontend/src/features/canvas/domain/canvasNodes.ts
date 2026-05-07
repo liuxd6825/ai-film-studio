@@ -125,6 +125,7 @@ export interface ImageEditNodeData extends NodeImageData {
   mode?: 'undecided' | 'upload' | 'prompt';
   sourceType?: 'upload' | 'generated' | 'reference';
   sourceFileName?: string | null;
+  promptType?: string;
 }
 
 export interface StoryboardFrameItem {
@@ -265,6 +266,7 @@ export interface CanvasEdge {
   sourceHandle?: string;
   targetHandle?: string;
   type?: string;
+  index?: number;
   style?: {
     strokeWidth?: number;
     opacity?: number;

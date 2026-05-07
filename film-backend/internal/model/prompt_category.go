@@ -1,17 +1,23 @@
 package model
 
-import (
-	"time"
+type PromptCategoryType string
 
-	"github.com/google/uuid"
+const (
+	CategoryConversation PromptCategoryType = "conversation" // 会话
+	CategoryCanvasText    PromptCategoryType = "canvas_text" // 画布文字
+	CategoryCanvasImage   PromptCategoryType = "canvas_image" // 画布图片
+	CategoryCanvasVideo   PromptCategoryType = "canvas_video" // 画布视频
 )
 
-type PromptCategory struct {
-	ID        uuid.UUID `gorm:"type:char(36);primaryKey" json:"id"`
-	ProjectID uuid.UUID `gorm:"type:char(36);index" json:"projectId"`
-	Name      string    `gorm:"size:255;not null" json:"name"`
-	CreatedAt time.Time `gorm:"createdAt" json:"createdAt"`
-	UpdatedAt time.Time `gorm:"createdAt" json:"updatedAt"`
+var AllPromptCategories = []PromptCategory{
+	{Key: CategoryConversation, Name: "会话", Description: "对话类提示词"},
+	{Key: CategoryCanvasText,   Name: "画布文字", Description: "画布文本节点提示词"},
+	{Key: CategoryCanvasImage,   Name: "画布图片", Description: "画布图片生成提示词"},
+	{Key: CategoryCanvasVideo,   Name: "画布视频", Description: "画布视频生成提示词"},
 }
 
-func (PromptCategory) TableName() string { return "prompt_category" }
+type PromptCategory struct {
+	Key         PromptCategoryType `json:"key"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+}
