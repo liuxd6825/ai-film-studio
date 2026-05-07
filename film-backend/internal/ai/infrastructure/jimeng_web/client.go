@@ -238,8 +238,12 @@ func (s *JiMengClient) GetTask(ctx context.Context, model, taskID string) (*aiop
 		status = aioptions.TaskStatusCompleted
 	case "failed":
 		status = aioptions.TaskStatusFailed
-	default:
+	case "generating":
+		status = aioptions.TaskStatusProcessing
+	case "pending":
 		status = aioptions.TaskStatusPending
+	default:
+		return nil, errors.New("invalid task status: " + res.Status)
 	}
 
 	result := aioptions.NewTask(res.TaskID, res.Model, status)

@@ -21,44 +21,98 @@ function formatTimestamp(seconds: number): string {
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}.${ms}`;
 }
 
+function replaceBaseUrl(s: string): string {
+  if (!s) {
+    return "";
+  }
+  if (s.startsWith("data:")) {
+    return s;
+  }
+  if (!s.startsWith("http://") && !s.startsWith("https://")) {
+    if (s.startsWith("/")) {
+      return window.location.origin + s;
+    }
+    return window.location.origin + "/" + s;
+  }
+  const slashIndex = s.indexOf("/", 7);
+  if (slashIndex === -1) {
+    return window.location.origin;
+  }
+  const baseUrl = s.substring(0, slashIndex);
+  return s.replace(baseUrl, window.location.origin);
+}
+
 async function extractFrame(
   videoUrl: string,
   timestamp: number,
+  timeout: number = 10000,
 ): Promise<{ imageUrl: string; width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
-    video.src = replaceBaseUrl(videoUrl);
+    const resolvedUrl = replaceBaseUrl(videoUrl);
+    console.log("[extractFrame] original url:", videoUrl, "resolved url:", resolvedUrl);
+    video.src = resolvedUrl;
     video.muted = true;
     video.preload = "auto";
 
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let settled = false;
+
+    const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      video.onseeked = null;
+      video.onerror = null;
+    };
+
+    const resolveOnce = (value: { imageUrl: string; width: number; height: number }) => {
+      if (!settled) {
+        settled = true;
+        cleanup();
+        resolve(value);
+      }
+    };
+
+    const rejectOnce = (error: Error) => {
+      if (!settled) {
+        settled = true;
+        cleanup();
+        reject(error);
+      }
+    };
+
+    timeoutId = setTimeout(() => {
+      rejectOnce(new Error("提取关键帧超时，请检查视频是否可加载"));
+    }, timeout);
+
     video.onseeked = () => {
+      console.log("[extractFrame] onseeked fired, videoWidth:", video.videoWidth, "videoHeight:", video.videoHeight);
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        rejectOnce(new Error("视频尺寸无效，无法提取帧"));
+        return;
+      }
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(video, 0, 0);
-        resolve({
+        resolveOnce({
           imageUrl: canvas.toDataURL("image/jpeg", 0.85),
           width: video.videoWidth,
           height: video.videoHeight,
         });
       } else {
-        reject(new Error("Failed to get canvas context"));
+        rejectOnce(new Error("无法获取画布上下文"));
       }
     };
 
-    video.onerror = () => reject(new Error("Failed to load video"));
+    video.onerror = () => {
+      console.error("[extractFrame] video onerror, src:", video.src);
+      rejectOnce(new Error("视频加载失败，请检查视频链接是否有效"));
+    };
+
     video.currentTime = timestamp;
   });
-}
-
-function replaceBaseUrl(s: string) {
-  if(!s) {
-    return ""
-  }
-  const sBaseUrl = s.substring(0, s.indexOf('/', 7));
-  return s.replace(sBaseUrl, window.location.origin)
 }
 
 export function KeyframeModal({
@@ -70,6 +124,7 @@ export function KeyframeModal({
 }: KeyframeModalProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -115,12 +170,15 @@ export function KeyframeModal({
 
   const handleExtract = useCallback(async () => {
     setIsExtracting(true);
+    setExtractError(null);
     try {
       const frameData = await extractFrame(videoUrl, currentTime);
       onExtract(currentTime, frameData.imageUrl, frameData.width, frameData.height);
       onClose();
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "提取关键帧失败";
       console.error("Failed to extract frame:", error);
+      setExtractError(errorMessage);
     } finally {
       setIsExtracting(false);
     }
@@ -158,7 +216,7 @@ export function KeyframeModal({
           <div className="relative bg-black rounded-lg overflow-hidden mb-4">
             <video
               ref={videoRef}
-              src={videoUrl}
+              src={replaceBaseUrl(videoUrl)}
               className="w-full h-auto max-h-[360px] object-contain"
               muted
               preload="auto"
@@ -204,6 +262,12 @@ export function KeyframeModal({
               当前选择: <span className="font-mono font-medium text-gray-900 dark:text-gray-200">{formatTimestamp(currentTime)}</span>
             </div>
           </div>
+
+          {extractError && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-600 dark:text-red-400">
+              {extractError}
+            </div>
+          )}
 
           <div className="flex justify-end gap-3">
             <button

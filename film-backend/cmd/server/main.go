@@ -235,7 +235,7 @@ func main() {
 	canvasFileService := canvasFileSvc.NewService(canvasFileRepo)
 	canvasFileHandler := handler.NewCanvasFileHandler(canvasFileService)
 
-	aiLLMService := ai.NewAiLLMService(&cfg.LangModels)
+	aiLLMService := ai.NewAiLLMService(&cfg.TextModels)
 	aiImageService := ai.NewAiImageService(&cfg.ImageModels)
 	aiVideoService := ai.NewAiVideoService(&cfg.VideoModels)
 

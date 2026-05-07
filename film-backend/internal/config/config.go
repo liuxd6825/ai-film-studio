@@ -14,6 +14,7 @@ type Config struct {
 	ServerAddr      string       `yaml:"server_addr"`
 	DB              DBConfig     `yaml:"db"`
 	LangModels      ModelsConfig `yaml:"lang_models"`
+	TextModels      ModelsConfig `yaml:"text_models"`
 	ImageModels     ModelsConfig `yaml:"image_models"`
 	VideoModels     ModelsConfig `yaml:"video_models"`
 	ShowErrorDetail bool         `yaml:"show_error_detail"`
@@ -103,6 +104,9 @@ func Load() (*Config, error) {
 		panic(err)
 	}
 
+	if err := cfg.validate(&cfg.TextModels); err != nil {
+		return nil, err
+	}
 	if err := cfg.validate(&cfg.LangModels); err != nil {
 		return nil, err
 	}

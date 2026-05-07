@@ -636,7 +636,7 @@ export function Canvas() {
           : "16:9";
 
         const store = useCanvasStore.getState();
-        const newNodeId = store.addDerivedUploadNode(
+        const newNodeId = store.addDerivedImageEditNode(
           keyframe.videoNodeId,
           keyframe.imageUrl,
           aspectRatio,

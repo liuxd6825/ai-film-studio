@@ -137,6 +137,12 @@ interface CanvasState {
     aspectRatio: string,
     previewImageUrl?: string,
   ) => string | null;
+  addDerivedImageEditNode: (
+    sourceNodeId: string,
+    imageUrl: string,
+    aspectRatio: string,
+    previewImageUrl?: string,
+  ) => string | null;
   addDerivedExportNode: (
     sourceNodeId: string,
     imageUrl: string,
@@ -1132,6 +1138,43 @@ addEdge: (source, target, index) => {
       width: derivedSize.width,
       height: derivedSize.height,
     };
+
+    set({
+      nodes: [...state.nodes, node],
+      selectedNodeId: node.id,
+      activeToolDialog: null,
+      history: {
+        past: pushSnapshot(
+          state.history.past,
+          createSnapshot(state.nodes, state.edges),
+        ),
+        future: [],
+      },
+      dragHistorySnapshot: null,
+    });
+
+    return node.id;
+  },
+
+  addDerivedImageEditNode: (
+    sourceNodeId,
+    imageUrl,
+    aspectRatio,
+    previewImageUrl,
+  ) => {
+    const state = get();
+    const position = getDerivedNodePosition(state.nodes, sourceNodeId);
+    const sourceNode = state.nodes.find((node) => node.id === sourceNodeId);
+    const resolvedAspectRatio = resolveDerivedAspectRatio(
+      sourceNode,
+      aspectRatio,
+    );
+    const node = createNode(CANVAS_NODE_TYPES.imageEdit, position, {
+      imageUrl,
+      previewImageUrl: previewImageUrl ?? null,
+      aspectRatio: resolvedAspectRatio,
+      mode: 'upload',
+    });
 
     set({
       nodes: [...state.nodes, node],
