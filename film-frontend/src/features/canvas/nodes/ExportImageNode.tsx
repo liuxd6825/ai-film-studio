@@ -4,6 +4,7 @@ import { Eye, Download, Trash2 } from "lucide-react";
 import { ExportImageNodeData } from "../domain/canvasNodes";
 import { useCanvasStore } from "../stores/canvasStore";
 import { downloadUrl } from "../domain/downloadUtils";
+import { EditableNodeTitle } from "../components/EditableNodeTitle";
 import { NodeToolbar } from "../ui/NodeToolbar";
 
 interface ExportImageNodeDataExt extends ExportImageNodeData {}
@@ -15,6 +16,7 @@ export const ExportImageNode = memo(function ExportImageNode({
 }: NodeProps & { data: ExportImageNodeDataExt }) {
   const openImageViewer = useCanvasStore((s) => s.openImageViewer);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
+  const updateNodeData = useCanvasStore((s) => s.updateNodeData);
 
   const handlePreview = useCallback(() => {
     if (data.imageUrl) {
@@ -68,9 +70,12 @@ export const ExportImageNode = memo(function ExportImageNode({
         } shadow-md relative group`}
       >
         <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-            {data.displayName || "导出图片"}
-          </span>
+          <EditableNodeTitle
+            nodeType="导出图片"
+            title={data.displayName || ""}
+            onSave={(newTitle) => updateNodeData(id, { displayName: newTitle })}
+            maxLength={50}
+          />
         </div>
         <div className="p-3">
           {data.imageUrl ? (
