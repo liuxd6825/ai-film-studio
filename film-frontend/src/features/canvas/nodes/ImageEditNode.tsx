@@ -15,6 +15,8 @@ import {
   isExportImageNode,
   isImageEditNode,
   IMAGE_ASPECT_RATIOS,
+  CANVAS_NODE_TYPES,
+  TextNodeData,
 } from "../domain/canvasNodes";
 import { ImageSelectorModal } from "../ui/ImageSelectorModal";
 import { downloadUrl } from "../domain/downloadUtils";
@@ -56,6 +58,7 @@ export const ImageEditNode = memo(function ImageEditNode({
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const openImageViewer = useCanvasStore((s) => s.openImageViewer);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
+  const openTextNodeOrderModal = useCanvasStore((s) => s.openTextNodeOrderModal);
 
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
   const [showImageSelector, setShowImageSelector] = useState(false);
@@ -437,8 +440,36 @@ const handleFile = useCallback(
     [projectId, id, updateNodeData],
   );
 
+  const getConnectedTextNodeContents = useCallback(() => {
+    const incomingEdges = edges
+      .filter((e) => e.target === id)
+      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+
+    const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
+    const contents: string[] = [];
+
+    for (const edge of incomingEdges) {
+      const sourceNode = nodeById.get(edge.source);
+      if (!sourceNode) continue;
+
+      if (sourceNode.type === CANVAS_NODE_TYPES.text) {
+        const textData = sourceNode.data as TextNodeData;
+        if (textData.content?.trim()) {
+          contents.push(textData.content.trim());
+        }
+      }
+    }
+
+    return contents;
+  }, [edges, id, nodes]);
+
   const handleGenerate = useCallback(async () => {
-    if (!data.prompt?.trim()) {
+    const textNodeContents = getConnectedTextNodeContents();
+    const mergedPrompt = [...textNodeContents, data.prompt]
+      .filter(Boolean)
+      .join("\n");
+
+    if (!mergedPrompt.trim()) {
       setError("请输入提示词");
       return;
     }
@@ -459,7 +490,7 @@ const handleFile = useCallback(
       else if (sizeValue === "8K") apiSize = "4K";
 
       const requestData: Parameters<typeof imageApi.generate>[1] = {
-        prompt: data.prompt,
+        prompt: mergedPrompt,
         model: data.aiModel,
         resolution: apiSize,
         aspectRatio,
@@ -523,6 +554,7 @@ const handleFile = useCallback(
     incomingImages,
     updateNodeData,
     startPolling,
+    getConnectedTextNodeContents,
   ]);
 
   const handleCancel = useCallback(async () => {
@@ -905,6 +937,14 @@ const handleFile = useCallback(
               />
 
               <button
+                type="button"
+                onClick={() => openTextNodeOrderModal(id)}
+                className="px-3 py-1.5 rounded text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                调整顺序
+              </button>
+
+              <button
                 className={`ml-auto px-4 py-1.5 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                   isGenerating
                     ? "bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700"
@@ -957,7 +997,7 @@ const handleFile = useCallback(
         onClose={() => setShowCancelConfirm(false)}
         onConfirm={handleConfirmCancel}
       />
-    </div>
+      </div>
     </>
   );
 });

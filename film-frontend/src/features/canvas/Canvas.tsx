@@ -26,6 +26,7 @@ import { NodeSelectionMenu } from "./NodeSelectionMenu";
 import { ImageViewerModal } from "./ui/ImageViewerModal";
 import { VideoViewerModal } from "./ui/VideoViewerModal";
 import { TextContentModal } from "./ui/TextContentModal";
+import { TextNodeOrderModal } from "./ui/TextNodeOrderModal";
 import { KeyframePanel } from "./components/KeyframePanel";
 import { CustomEdge } from "./components/CustomEdge";
 import { useProjectStore } from "../../stores/projectStore";
@@ -86,6 +87,8 @@ export function Canvas() {
     isImageSelectorOpen,
     setCurrentZoom,
     setToolbarActions,
+    textNodeOrderModal,
+    closeTextNodeOrderModal,
   } = useCanvasStore();
 
   const { currentProjectId } = useProjectStore();
@@ -722,6 +725,13 @@ export function Canvas() {
       <TextContentModal />
 
       <KeyframePanel />
+
+      {textNodeOrderModal.isOpen && textNodeOrderModal.targetNodeId && (
+        <TextNodeOrderModal
+          targetNodeId={textNodeOrderModal.targetNodeId}
+          onClose={closeTextNodeOrderModal}
+        />
+      )}
     </div>
   );
 }

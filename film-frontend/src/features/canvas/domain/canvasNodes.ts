@@ -266,6 +266,7 @@ export interface CanvasEdge {
   sourceHandle?: string;
   targetHandle?: string;
   type?: string;
+  index?: number;
   style?: {
     strokeWidth?: number;
     opacity?: number;
