@@ -23,6 +23,7 @@ import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
 import { NodeTextarea } from "../components/NodeTextarea";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { EditableNodeTitle } from "../components/EditableNodeTitle";
 
 const IMAGE_SIZES = [
   { value: "1024", label: "1K" },
@@ -436,6 +437,8 @@ const handleFile = useCallback(
           }
         } catch (err) {
           console.error("Poll error:", err);
+          clearInterval(pollingIntervalRef.current!);
+          setIsGenerating(false);
         }
       }, 30000);
     },
@@ -481,6 +484,7 @@ const handleFile = useCallback(
     setTaskStatus("pending");
     setTaskProgress(0);
 
+    let task: Awaited<ReturnType<typeof imageApi.generate>> | undefined;
     try {
       const sizeValue = data.size || "1K";
       const aspectRatio = data.requestAspectRatio || "1:1";
@@ -505,7 +509,7 @@ const handleFile = useCallback(
         requestData.referenceImages = incomingImages.map((img) => img.imageUrl);
       }
 
-      const task = await imageApi.generate(
+      task = await imageApi.generate(
         projectId || "default",
         requestData,
       );
@@ -541,6 +545,10 @@ const handleFile = useCallback(
         errorMessage: err instanceof Error ? err.message : "生成失败",
       });
       setIsGenerating(false);
+    } finally {
+      if (!task?.id) {
+        setIsGenerating(false);
+      }
     }
   }, [
     canvasId,
@@ -734,9 +742,12 @@ const handleFile = useCallback(
         onPaste={handlePaste}
       >
         <div className="p-1.5 flex items-center justify-between">
-          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-            {data.displayName || "图片"}
-          </span>
+          <EditableNodeTitle
+          nodeType="图片"
+          title={data.displayName || ""}
+          onSave={(newTitle) => updateNodeData(id, { displayName: newTitle })}
+          maxLength={50}
+        />
           <div className="flex items-center gap-2">
             {(isGenerating ||
               taskStatus === "pending" ||
@@ -793,6 +804,13 @@ const handleFile = useCallback(
                 alt=""
                 className="w-full h-full object-contain"
                 onError={() => setImageLoadError(true)}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setShowFloatingPanel(false);
+                  if (data.imageUrl) {
+                    openImageViewer(data.imageUrl);
+                  }
+                }}
               />
             </div>
           )
