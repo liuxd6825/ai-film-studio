@@ -262,6 +262,7 @@ const handleFile = useCallback(
             updateNodeData(id, {
               imageUrl: result.resultUrl,
               taskStatus: "completed",
+              mode: "prompt",
               taskProgress: 100,
             });
             setIsGenerating(false);
@@ -405,6 +406,7 @@ const handleFile = useCallback(
             updateNodeData(id, {
               imageUrl: result.resultUrl,
               taskStatus: "completed",
+              mode: "prompt",
               taskProgress: 100,
             });
             clearInterval(pollingIntervalRef.current!);
@@ -521,14 +523,12 @@ const handleFile = useCallback(
         updateNodeData(id, {
           taskId: task.id,
           taskStatus: "processing",
+          mode: data.mode || 'prompt',
         });
         startPolling(task.id);
       } else {
-        setTaskStatus("completed");
-        updateNodeData(id, {
-          // imageUrl: id.imageUrl,
-          taskStatus: "completed",
-        });
+        setError("任务创建失败：未获取到任务ID");
+        setTaskStatus("failed");
         setIsGenerating(false);
       }
 
@@ -640,7 +640,7 @@ const handleFile = useCallback(
 
   return (
     <>
-      <NodeToolbar nodeId={id} visible={selected}>
+      <NodeToolbar nodeId={id} visible={selected && !isGenerating}>
         {effectiveMode === 'undecided' && (
           <button
             type="button"
@@ -686,8 +686,8 @@ const handleFile = useCallback(
             e.stopPropagation();
             openImageViewer(data.imageUrl!);
           }}
-          disabled={!data.imageUrl}
-          className={`p-1.5 rounded ${data.imageUrl ? "hover:bg-gray-100 dark:hover:bg-gray-700" : "opacity-40 cursor-not-allowed"}`}
+          disabled={!data.imageUrl || isGenerating}
+          className={`p-1.5 rounded ${data.imageUrl && !isGenerating ? "hover:bg-gray-100 dark:hover:bg-gray-700" : "opacity-40 cursor-not-allowed"}`}
           title="预览"
         >
           <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -698,8 +698,8 @@ const handleFile = useCallback(
             e.stopPropagation();
             handleDownload();
           }}
-          disabled={!data.imageUrl}
-          className={`p-1.5 rounded ${data.imageUrl ? "hover:bg-gray-100 dark:hover:bg-gray-700" : "opacity-40 cursor-not-allowed"}`}
+          disabled={!data.imageUrl || isGenerating}
+          className={`p-1.5 rounded ${data.imageUrl && !isGenerating ? "hover:bg-gray-100 dark:hover:bg-gray-700" : "opacity-40 cursor-not-allowed"}`}
           title="下载"
         >
           <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -710,7 +710,8 @@ const handleFile = useCallback(
             e.stopPropagation();
             handleDelete();
           }}
-          className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+          disabled={isGenerating}
+          className={`p-1.5 rounded ${!isGenerating ? "hover:bg-red-100 dark:hover:bg-red-900/30" : "opacity-40 cursor-not-allowed"}`}
           title="删除"
         >
           <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />

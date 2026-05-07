@@ -91,7 +91,7 @@ func (s *Service) CreateTask(req CreateTaskRequest) (*model.CanvasTask, error) {
 		ResultURL: req.ResultURL,
 		ResultID:  req.ResultID,
 		Params:    string(paramsJSON),
-		Status:    model.TaskStatusPending,
+		Status:    aioptions.TaskStatusPending,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Workspace: req.Workspace,
@@ -112,13 +112,13 @@ func (s *Service) GetTask(id string) (*model.CanvasTask, error) {
 	return task, nil
 }
 
-func (s *Service) UpdateTaskStatus(id string, status int, resultURL string, resultData string, errorMessage string) error {
+func (s *Service) UpdateTaskStatus(id string, status aioptions.TaskStatus, resultURL string, resultData string, errorMessage string) error {
 	return s.repo.UpdateStatus(id, status, resultURL, resultData, errorMessage)
 
 }
 
 func (s *Service) StartTask(id string) error {
-	return s.repo.UpdateStatus(id, model.TaskStatusProcessing, "", "", "")
+	return s.repo.UpdateStatus(id, aioptions.TaskStatusPending, "", "", "")
 }
 
 func (s *Service) CompleteTask(ctx context.Context, taskID string, results []*model.CanvasTaskResult) (*model.CanvasTask, error) {
@@ -149,30 +149,32 @@ func (s *Service) completeTaskImpl(ctx context.Context, taskID string, results [
 			resultURL = results[0].URL
 		}
 
-		return tx.Model(&model.CanvasTask{}).Where("id = ?", task.ID).Updates(map[string]interface{}{
-			"status":      model.TaskStatusCompleted,
+		err = tx.Model(&model.CanvasTask{}).Where("id = ?", task.ID).Updates(map[string]interface{}{
+			"status":      aioptions.TaskStatusCompleted,
 			"result_url":  resultURL,
 			"result_data": task.ResultData,
 		}).Error
-	})
 
-	if err == nil {
-		task.Status = model.TaskStatusCompleted
-	}
+		if err == nil {
+			task.Status = aioptions.TaskStatusCompleted
+			task.ResultURL = resultURL
+		}
+		return err
+	})
 
 	return task, err
 }
 
 func (s *Service) FailTask(id string, errorMessage string) error {
 	_, err, _ := s.sfGroup.Do(id, func() (interface{}, error) {
-		return nil, s.repo.UpdateStatus(id, model.TaskStatusFailed, "", "", errorMessage)
+		return nil, s.repo.UpdateStatus(id, aioptions.TaskStatusFailed, "", "", errorMessage)
 	})
 	return err
 }
 
 func (s *Service) CancelTask(id string) error {
 	_, err, _ := s.sfGroup.Do(id, func() (interface{}, error) {
-		return nil, s.repo.UpdateStatus(id, model.TaskStatusCancelled, "", "", "")
+		return nil, s.repo.UpdateStatus(id, aioptions.TaskStatusCancelled, "", "", "")
 	})
 	return err
 }
@@ -238,7 +240,7 @@ func (s *Service) PollTask(ctx context.Context, taskID string) (*model.CanvasTas
 		return nil, err
 	}
 
-	if task.Status == aioptions.TaskStatusCompleted || task.Status == aioptions.TaskStatusFailed {
+	if task.Status != aioptions.TaskStatusPending {
 		return task, nil
 	}
 
@@ -256,6 +258,9 @@ func (s *Service) PollTask(ctx context.Context, taskID string) (*model.CanvasTas
 		return s.CompleteTask(ctx, taskID, results)
 	case aioptions.TaskStatusFailed:
 		err = s.FailTask(taskID, aiTask.ErrorMsg)
+		return task, err
+	case aioptions.TaskStatusCancelled:
+		err = s.CancelTask(taskID)
 		return task, err
 	case aioptions.TaskStatusPending:
 		return task, nil

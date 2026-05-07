@@ -52,9 +52,11 @@ type NewTaskRefItem struct {
 type TaskStatus int
 
 const (
-	TaskStatusPending   TaskStatus = 0
-	TaskStatusCompleted TaskStatus = 1
-	TaskStatusFailed    TaskStatus = 2
+	TaskStatusPending    TaskStatus = 0
+	TaskStatusProcessing TaskStatus = 4
+	TaskStatusCompleted  TaskStatus = 1
+	TaskStatusFailed     TaskStatus = 2
+	TaskStatusCancelled  TaskStatus = 3
 )
 
 func (s TaskStatus) String() string {
@@ -65,6 +67,10 @@ func (s TaskStatus) String() string {
 		return "failed"
 	case TaskStatusPending:
 		return "pending"
+	case TaskStatusCancelled:
+		return "cancelled"
+	case TaskStatusProcessing:
+		return "processing"
 	}
 	return "none"
 }
