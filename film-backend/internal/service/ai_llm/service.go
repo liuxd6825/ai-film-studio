@@ -26,13 +26,17 @@ var _vertical_video_prompt string
 //go:embed prompts/2.输出示例.md
 var _videoPrompt string
 
-//go:embed prompts/六宫格.md
+//go:embed prompts/3.六宫格.md
 var _six_grid_layout string
+
+//go:embed prompts/4.男角色.md
+var _man_character string
 
 // PromptType 提示词类型
 type PromptType struct {
-	Id    string `json:"id,omitempty"`
-	Title string `json:"title,omitempty"   `
+	Id     string `json:"id,omitempty"`
+	Title  string `json:"title,omitempty"`
+	Prompt string `json:"prompt,omitempty"` // 提示词内容，会更新节点的提示词输入框
 }
 
 type ImageSize string
@@ -86,7 +90,7 @@ func NewService(config *config.Config, aiLLMService *ai.AiLLMService) *Service {
 		promptTypes: []PromptType{
 			{
 				Id:    "chat",
-				Title: "对话",
+				Title: "空",
 			},
 			{
 				Id:    "horizontal_video_prompt",
@@ -99,6 +103,16 @@ func NewService(config *config.Config, aiLLMService *ai.AiLLMService) *Service {
 			{
 				Id:    "six_grid_layout",
 				Title: "六宫格",
+			},
+			{
+				Id:     "man_character",
+				Title:  "男角色",
+				Prompt: `人设:\n年龄:\n气质风格:\n肤色:\n配饰:\n发型:`,
+			},
+			{
+				Id:     "woman_character",
+				Title:  "女角色",
+				Prompt: `人设:\n年龄:\n气质风格:\n肤色:\n配饰:\n发型:`,
 			},
 		},
 	}
@@ -114,6 +128,8 @@ func (s *Service) Generate(ctx context.Context, opts aioptions.ChatRequest) (*ai
 		return s.GetVideoPrompt(ctx, opts)
 	case "six_grid_layout":
 		return s.GetSixGridLayoutPrompt(ctx, opts)
+	case "man_character":
+
 	}
 	return nil, errors.New("invalid prompt type " + opts.PromptType)
 }
