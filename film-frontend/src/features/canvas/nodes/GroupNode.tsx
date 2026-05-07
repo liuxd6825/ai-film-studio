@@ -4,6 +4,7 @@ import { Trash2, Unlink2 } from "lucide-react";
 import { GroupNodeData } from "../domain/canvasNodes";
 import { useCanvasStore } from "../stores/canvasStore";
 import { NodeToolbar } from "../ui/NodeToolbar";
+import { EditableNodeTitle } from "../components/EditableNodeTitle";
 
 interface GroupNodeDataExt extends GroupNodeData {}
 
@@ -14,6 +15,7 @@ export const GroupNode = memo(function GroupNode({
 }: NodeProps & { data: GroupNodeDataExt }) {
   const deleteNode = useCanvasStore((s) => s.deleteNode);
   const ungroupNode = useCanvasStore((s) => s.ungroupNode);
+  const updateNodeData = useCanvasStore((s) => s.updateNodeData);
 
   const handleDelete = useCallback(() => {
     deleteNode(id);
@@ -56,9 +58,12 @@ export const GroupNode = memo(function GroupNode({
         style={{ opacity: 0.9 }}
       >
         <div className="p-2 border-b border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-900/30 rounded-t-lg">
-          <span className="font-medium text-xs text-blue-700 dark:text-blue-400">
-            {data.label || "分组"}
-          </span>
+          <EditableNodeTitle
+            nodeType="分组"
+            title={data.label || ""}
+            onSave={(newTitle) => updateNodeData(id, { label: newTitle })}
+            maxLength={50}
+          />
         </div>
         <div className="p-3">
           <div className="text-xs text-blue-400 dark:text-blue-500">拖拽节点到此处分组</div>
