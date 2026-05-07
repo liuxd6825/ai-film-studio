@@ -353,19 +353,21 @@ class GeminiPage(BasePage):
 
         thinking_selector = f"[id='{data_id}'] .thinking"
         print(f"[GeminiPage] 等待 .thinking 元素出现: {thinking_selector}")
+
         thinking_timeout = 0
-        while thinking_timeout < 120:
+        while thinking_timeout < 300:
             try:
                 thinking_element = self.page.locator(thinking_selector)
                 if await thinking_element.count() > 0:
-                    print(f"[GeminiPage] .thinking 元素已找到")
+                    print("[GeminiPage] .thinking 元素已找到")
                     break
             except Exception as e:
                 print(f"[GeminiPage] 检查 .thinking 元素异常: {e}")
                 break
             thinking_timeout += 1
             await self.page.wait_for_timeout(1000)
-        else:
+
+        if thinking_timeout >= 300:
             print("[GeminiPage] 等待 .thinking 元素超时")
             return {
                 "data_id": "",
@@ -375,11 +377,11 @@ class GeminiPage(BasePage):
             }
 
         pending_count = 0
-        while pending_count <= 600:
+        while pending_count <= 3600:
             pending = self.page.locator(thinking_selector)
             if await pending.count() > 0:
                 pending_count += 1
-                if pending_count > 600:
+                if pending_count > 3600:
                     return {
                         "data_id": "",
                         "workspace": "",
@@ -388,7 +390,7 @@ class GeminiPage(BasePage):
                     }
                 await self.page.wait_for_timeout(1000)
                 continue
-
+            await self.page.wait_for_timeout(3000)
             pending_count = 0
 
             url = self.page.url
