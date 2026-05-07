@@ -10,6 +10,7 @@ import { useCanvasStore } from "../stores/canvasStore";
 import { llmApi, type LLMModel, type PromptType } from "../../../api/llmApi";
 import { NodeToolbar } from "../ui/NodeToolbar";
 import { NodeTextarea } from "../components/NodeTextarea";
+import { EditableNodeTitle } from "../components/EditableNodeTitle";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 const MAX_PREVIEW_LENGTH = 100;
@@ -453,9 +454,12 @@ export const TextNode = memo(function TextNode({
           handleClassName="!w-3 !h-3 !bg-blue-500 !border-0 !rounded-sm"
         />
         <div className="p-1.5 flex items-center justify-between flex-shrink-0">
-          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-            {data.displayName || "文本"}
-          </span>
+          <EditableNodeTitle
+            nodeType="文本"
+            title={data.displayName || ""}
+            onSave={(newTitle) => updateNodeData(id, { displayName: newTitle })}
+            maxLength={50}
+          />
           <div className="flex items-center gap-2">
             {(isGenerating ||
               taskStatus === "pending" ||
