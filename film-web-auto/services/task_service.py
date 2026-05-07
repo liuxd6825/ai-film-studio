@@ -12,7 +12,17 @@ class TaskService:
         self.task_result_dao = TaskResultDAO(session)
     
     async def create_task(self, task_data: dict) -> Task:
-        return await self.task_dao.create(task_data)
+        task = await self.task_dao.create(task_data)
+
+        if task and task.request_id:
+            from services.client_request_service import ClientRequestService
+            client_request_service = ClientRequestService(self.session)
+            request_data = {"status": task.status}
+            if task.desc is not None:
+                request_data["desc"] = task.desc
+            await client_request_service.update_client_request(task.request_id, request_data)
+
+        return task
     
     async def get_task(self, task_id: str) -> Optional[Task]:
         return await self.task_dao.get_by_id(task_id)

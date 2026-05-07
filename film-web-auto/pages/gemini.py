@@ -252,7 +252,7 @@ class GeminiPage(BasePage):
             send_btn = self.page.locator("button[aria-label='发送'][aria-disabled='false']").first
             if await send_btn.count() == 0:
                 count = count + 1
-                if count > 20:
+                if count > 600:
                     break
                 print(f"[GeminiPage] 警告: 第 {count} 次未找到发送按钮")
                 await self.page.wait_for_timeout(1000)

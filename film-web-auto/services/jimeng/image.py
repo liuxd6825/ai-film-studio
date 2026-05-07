@@ -47,7 +47,7 @@ class ImageGenerationService(BaseService):
 
             await jimeng.navigate()
 
-            await jimeng.close_dialog()
+            await jimeng.close_modal_dialog()
 
             await jimeng.select_generation_mode("图片生成")
             await jimeng.select_model(model)
@@ -63,7 +63,7 @@ class ImageGenerationService(BaseService):
 
             if files:
                 await jimeng.upload_reference_images(files)
-            await jimeng.input_prompt(prompt)
+            data_id = await jimeng.input_prompt(prompt)
 
             await jimeng.submit()
 
@@ -89,28 +89,15 @@ class ImageGenerationService(BaseService):
                 except Exception:
                     await session.rollback()
                 return {"success": False, "status": status, "result": message}
-            data = {}
-            if result["data_id"]:
-                data = {
-                    "id": result["data_id"],
-                    "request_id": request_id,
-                    "workspace": workspace,
-                    "data_id": result["data_id"],
-                    "type": "image",
-                    "system": "jimeng",
-                    "status": result["status"],
-                }
-            else:
-                data = {
-                    "id": request_id + "_error",
-                    "request_id": request_id,
-                    "workspace": workspace,
-                    "data_id": "",
-                    "type": "image",
-                    "system": "jimeng",
-                    "status": "failed",
-                    "desc": "generate error, not found 'data-id'",
-                }
+            data = {
+                "id": data_id,
+                "request_id": request_id,
+                "workspace": workspace,
+                "data_id": data_id,
+                "type": "image",
+                "system": "jimeng",
+                "status": result["status"],
+            }
 
             await task_service.create_task(data)
             await session.commit()
