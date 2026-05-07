@@ -19,6 +19,7 @@ import { KeyframeModal } from "../ui/KeyframeModal";
 import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
 import { NodeTextarea } from "../components/NodeTextarea";
+import { EditableNodeTitle } from "../components/EditableNodeTitle";
 import { VideoSettingCard } from "../components/VideoSettingCard";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 
@@ -702,12 +703,17 @@ export const VideoGenNode = memo(function VideoGenNode({
 
   const handleExtractKeyframe = useCallback(
     (timestamp: number, imageUrl: string, width?: number, height?: number) => {
-      if (data.videoUrl) {
-        addKeyframe(id, timestamp, imageUrl, data.videoUrl, width, height);
+      if (!data.videoUrl) {
+        throw new Error("视频链接无效");
+      }
+      const keyframe = addKeyframe(id, timestamp, imageUrl, data.videoUrl, width, height);
+      if (!keyframe) {
+        throw new Error("无法添加关键帧，节点可能已被删除");
       }
     },
     [id, data.videoUrl, addKeyframe],
   );
+
 
   const getVideoDuration = useCallback((): number => {
     return data.duration || 5;
@@ -826,9 +832,12 @@ export const VideoGenNode = memo(function VideoGenNode({
         } shadow-md relative group`}
       >
         <div className="p-1.5 flex items-center justify-between">
-          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-            {data.displayName || "视频"}
-          </span>
+          <EditableNodeTitle
+            nodeType="视频"
+            title={data.displayName || ""}
+            onSave={(newTitle) => updateNodeData(id, { displayName: newTitle })}
+            maxLength={50}
+          />
           <div className="flex items-center gap-2">
             {(isGenerating ||
               taskStatus === "pending" ||
