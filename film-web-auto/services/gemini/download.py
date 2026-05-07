@@ -75,29 +75,17 @@ class GeminiDownload:
         download_btns = page.locator(selector)
         download_btn_count = await download_btns.count()
         if download_btn_count == 0:
-            selector = f"#model-response-message-contentr_{task.id} > p[data-path-to-node='0']"
+            print(f"TaskId={task.id}的任务Gemini未生成图片")
+            selector = f"#model-response-message-contentr_{task.id}"
             message_p = page.locator(selector)
             message_p_count = await message_p.count()
             if message_p_count == 1:
-                text = await page.evaluate("""(sel) => document.querySelector(sel)?.innerText || ''""", selector)
-                await task_service.update_task_status(task.id, "failed", text or "图片生成出错")
+                text = await message_p.text_content()
+                await task_service.update_task_status(task.id, "failed", f"Gemini未生成图片：{text}")
                 return
             else:
-                await task_service.update_task_status(task.id, "failed", "图片生成出错")
+                await task_service.update_task_status(task.id, "failed", "Gemini未生成图片")
                 return
-
-        # for fail_text in FAIL_TEXTS:
-        #     if fail_text in text:
-        #         print(f"[GeminiDownload] Task {task.id} validation failed: {fail_text}")
-        #         await task_service.update_task_status(task.id, "failed", fail_text)
-        #         return
-        #
-        # for wait_text in WAIT_TEXTS:
-        #     if wait_text in text:
-        #         print(f"[GeminiDownload] Task {task.id} still waiting: {wait_text}")
-        #         return
-        #
-        # print(f"[GeminiDownload] Task {task.id} ready for download")
 
         task_result = {}
         try:
