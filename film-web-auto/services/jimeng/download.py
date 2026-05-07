@@ -44,7 +44,8 @@ class JimengDownload:
         workspace_dir = os.path.join(settings.DOWNLOAD_CACHE_DIR, task.system, task.workspace or "0")
         Path(workspace_dir).mkdir(parents=True, exist_ok=True)
 
-        target_div = await cls._get_target_div(page=page, data_id=task.id)
+        el = "div" if task.type == "video" else "span"
+        target_div = await cls._get_target_div(page=page, data_id=task.id, el=el)
 
         if task.type == "video":
             items = target_div.locator("div[class*='video-card-wrapper-']")
@@ -96,7 +97,8 @@ class JimengDownload:
         await scroll_element_to_top(page, virtual_list_selector)
         await asyncio.sleep(1)
 
-        target_div = await cls._get_target_div(page=page, data_id=task.id)
+        el = "div" if task.type == "video" else "span"
+        target_div = await cls._get_target_div(page=page, data_id=task.id, el=el)
 
         while target_div is None:
             last_y = await get_element_scroll_position(page, virtual_list_selector)
@@ -111,7 +113,7 @@ class JimengDownload:
             if current_y == last_y or current_y >= max_pos:
                 await task_service.update_task_status(task.id, "failed", "Element not found, no more scrollable")
                 return
-            target_div = await cls._get_target_div(page=page, data_id=task.id)
+            target_div = await cls._get_target_div(page=page, data_id=task.id, el=el)
 
         text = await target_div.locator("div[class^='record-box-']").text_content()
 
@@ -149,7 +151,7 @@ class JimengDownload:
             print(f"[JimengDownload] Task {task.id} no files found, marked as failed")
 
     @classmethod
-    async def _get_target_div(self, page, data_id) -> Locator | None :
+    async def _get_target_div(self, page, data_id, el: str = "span") -> Locator | None :
         div_list = page.locator("div[class^='virtua-list-']>div>div>div")
         div_list_count = await div_list.count()
         if div_list_count == 0:
@@ -157,7 +159,7 @@ class JimengDownload:
 
         for i in range(div_list_count):
             div = div_list.nth(i)
-            div_prompt = div.locator("div[class^='record-header-content-'] span[class^='prompt-value-container-']")
+            div_prompt = div.locator(f"div[class^='record-header-content-'] {el}[class^='prompt-value-container-']")
             if await div_prompt.count() > 0:
                 text = await div_prompt.text_content() or ""
                 if data_id in text:

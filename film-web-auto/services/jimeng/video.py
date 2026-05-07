@@ -121,5 +121,4 @@ class VideoGenerationService(BaseService):
 
         finally:
             if jimeng and jimeng.page:
-                pass
-                # await browser_manager.close_page(jimeng.page)
+                await browser_manager.close_page(jimeng.page)
