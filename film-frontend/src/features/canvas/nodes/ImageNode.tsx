@@ -7,6 +7,7 @@ import { useCanvasStore } from "../stores/canvasStore";
 import { canvasFileApi } from "../../../api/canvasFileApi";
 import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
+import { EditableNodeTitle } from "../components/EditableNodeTitle";
 
 interface ImageNodeData extends UploadImageNodeData {
   onImageChange?: (
@@ -196,9 +197,12 @@ export const ImageNode = memo(function ImageNode({
         onPaste={handlePaste}
       >
         <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-            {data.displayName || "图片"}
-          </span>
+          <EditableNodeTitle
+            nodeType="图片"
+            title={data.displayName || ""}
+            onSave={(newTitle) => updateNodeData(id, { displayName: newTitle })}
+            maxLength={50}
+          />
           {data.sourceFileName && (
             <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[100px]">
               {data.sourceFileName}
