@@ -9,6 +9,8 @@ import {
   isExportImageNode,
   isImageEditNode,
   IMAGE_ASPECT_RATIOS,
+  CANVAS_NODE_TYPES,
+  TextNodeData,
 } from "../domain/canvasNodes";
 import { useCanvasStore } from "../stores/canvasStore";
 import { videoApi, type GenerateVideoRequest, type VideoAiModel } from "../../../api/videoApi";
@@ -123,6 +125,7 @@ export const VideoGenNode = memo(function VideoGenNode({
   const openVideoViewer = useCanvasStore((s) => s.openVideoViewer);
   const addKeyframe = useCanvasStore((s) => s.addKeyframe);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
+  const openTextNodeOrderModal = useCanvasStore((s) => s.openTextNodeOrderModal);
 
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
   const [showVideoSelector, setShowVideoSelector] = useState(false);
@@ -525,15 +528,42 @@ export const VideoGenNode = memo(function VideoGenNode({
     }
   }, [data.taskId, data.taskStatus, data.taskProgress, projectId, id, updateNodeData, startPolling]);
 
+  const getConnectedTextNodeContents = useCallback(() => {
+    const incomingEdges = edges
+      .filter((e) => e.target === id)
+      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+
+    const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
+    const contents: string[] = [];
+
+    for (const edge of incomingEdges) {
+      const sourceNode = nodeById.get(edge.source);
+      if (!sourceNode) continue;
+
+      if (sourceNode.type === CANVAS_NODE_TYPES.text) {
+        const textData = sourceNode.data as TextNodeData;
+        if (textData.content?.trim()) {
+          contents.push(textData.content.trim());
+        }
+      }
+    }
+
+    return contents;
+  }, [edges, id, nodes]);
+
   const handleGenerate = useCallback(async () => {
-    debugger
-    if (!projectId) {
-      setError("项目ID无效，请刷新页面重试");
+    const textNodeContents = getConnectedTextNodeContents();
+    const mergedPrompt = [...textNodeContents, data.prompt]
+      .filter(Boolean)
+      .join("\n");
+
+    if (!mergedPrompt.trim()) {
+      setError("请输入提示词");
       return;
     }
 
-    if (!data.prompt?.trim()) {
-      setError("请输入提示词");
+    if (!projectId) {
+      setError("项目ID无效，请刷新页面重试");
       return;
     }
 
@@ -551,7 +581,7 @@ export const VideoGenNode = memo(function VideoGenNode({
       let requestData: GenerateVideoRequest = {
         node_id: id,
         canvas_id:canvasId||"",
-        prompt: data.prompt,
+        prompt: mergedPrompt,
         model: data.aiModel,
         aspect_ratio: data.aspectRatio,
         fps: data.fps,
@@ -617,6 +647,7 @@ export const VideoGenNode = memo(function VideoGenNode({
     incomingImages,
     updateNodeData,
     startPolling,
+    getConnectedTextNodeContents,
   ]);
 
   const handleCancel = useCallback(async () => {
@@ -1011,6 +1042,14 @@ export const VideoGenNode = memo(function VideoGenNode({
                     updateNodeData(id, { duration: value })
                   }
                 />
+
+                <button
+                  type="button"
+                  onClick={() => openTextNodeOrderModal(id)}
+                  className="px-3 py-1.5 rounded text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  调整顺序
+                </button>
 
                 <button
                   className={`ml-auto px-4 py-1.5 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
