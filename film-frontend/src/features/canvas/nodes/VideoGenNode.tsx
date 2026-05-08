@@ -649,21 +649,21 @@ export const VideoGenNode = memo(function VideoGenNode({
         projectId,
         canvasId,
         nodeId: id,
-        hasRequestId: !!response.task_id,
-        requestId: response.task_id,
+        hasRequestId: !!response.id,
+        requestId: response.id,
       });
 
-      if (response.task_id) {
+      if (response.id) {
         setTaskStatus("processing");
         updateNodeData(id, {
-          taskId: response.task_id,
+          taskId: response.id,
           taskStatus: "processing",
         });
-        startPolling(response.task_id);
-      } else if (response.result_url) {
+        startPolling(response.id);
+      } else if (response.resultUrl) {
         updateNodeData(id, {
-          videoUrl: response.result_url,
-          previewVideoUrl: response.result_url,
+          videoUrl: response.resultUrl,
+          previewVideoUrl: response.resultUrl,
         });
 
         setTaskStatus("processing");
