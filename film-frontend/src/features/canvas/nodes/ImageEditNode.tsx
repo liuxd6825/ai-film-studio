@@ -77,6 +77,7 @@ export const ImageEditNode = memo(function ImageEditNode({
   const [isUploading, setIsUploading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefForPrompt = useRef<HTMLInputElement>(null);
 
   const effectiveMode = data.mode || 'prompt';
 
@@ -111,6 +112,39 @@ const handleFile = useCallback(
           sourceFileName: file.name,
           sourceType: 'upload',
           mode: 'upload',
+        });
+      } catch (error) {
+        console.error("Failed to upload file:", error);
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [id, projectId, canvasId, updateNodeData],
+  );
+
+  const handleFileForPromptMode = useCallback(
+    async (file: File) => {
+      if (!file.type.startsWith("image/")) return;
+
+      if (!projectId || !canvasId) {
+        console.error("Missing projectId or canvasId");
+        return;
+      }
+
+      setIsUploading(true);
+      try {
+        const response = await canvasFileApi.upload(
+          projectId,
+          canvasId,
+          id,
+          file,
+        );
+        updateNodeData(id, {
+          imageUrl: response.downloadUrl,
+          previewImageUrl: response.downloadUrl,
+          sourceFileName: file.name,
+          sourceType: 'upload',
+          mode: 'prompt',
         });
       } catch (error) {
         console.error("Failed to upload file:", error);
@@ -166,6 +200,16 @@ const handleFile = useCallback(
       }
     },
     [handleFile],
+  );
+
+  const handleFileInputForPrompt = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleFileForPromptMode(files[0]);
+      }
+    },
+    [handleFileForPromptMode],
   );
 
   useEffect(() => {
@@ -468,9 +512,22 @@ const handleFile = useCallback(
     return contents;
   }, [edges, id, nodes]);
 
+  const getReferenceImageDescriptions = useCallback(() => {
+    const descriptions: string[] = [];
+    let imageIndex = 0;
+    for (const img of incomingImages) {
+      if (img.label?.trim()) {
+        imageIndex++;
+        descriptions.push(`参考图${imageIndex}是${img.label.trim()}`);
+      }
+    }
+    return descriptions;
+  }, [incomingImages]);
+
   const handleGenerate = useCallback(async () => {
     const textNodeContents = getConnectedTextNodeContents();
-    const mergedPrompt = [...textNodeContents, data.prompt]
+    const referenceDescriptions = getReferenceImageDescriptions();
+    const mergedPrompt = [...referenceDescriptions, ...textNodeContents, data.prompt]
       .filter(Boolean)
       .join("\n");
 
@@ -563,6 +620,7 @@ const handleFile = useCallback(
     updateNodeData,
     startPolling,
     getConnectedTextNodeContents,
+    getReferenceImageDescriptions,
   ]);
 
   const handleCancel = useCallback(async () => {
@@ -676,17 +734,30 @@ const handleFile = useCallback(
           </button>
         )}
         {effectiveMode === 'prompt' && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowImageSelector(true);
-            }}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-            title="选择"
-          >
-            <Image className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRefForPrompt.current?.click();
+              }}
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              title="上传"
+            >
+              <Upload className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowImageSelector(true);
+              }}
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              title="选择"
+            >
+              <Image className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            </button>
+          </>
         )}
         <button
           type="button"
@@ -731,6 +802,13 @@ const handleFile = useCallback(
         accept="image/*"
         className="hidden"
         onChange={handleFileInput}
+      />
+      <input
+        ref={fileInputRefForPrompt}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileInputForPrompt}
       />
       <div
         className={`min-w-[200px] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${
