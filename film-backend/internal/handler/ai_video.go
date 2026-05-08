@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"open-film-service/internal/ai/aioptions"
+	"open-film-service/internal/model"
 	"open-film-service/internal/service/ai_video"
 	"open-film-service/internal/service/canvas_task"
 	"strings"
@@ -64,36 +65,52 @@ func (h *AIVideoHandler) Generate(ctx iris.Context) {
 		return
 	}
 
-	if h.taskSvc != nil && req.NodeID != "" {
-		createTaskRequest := canvas_task.CreateTaskRequest{
+	var canvasTask *model.CanvasTask
+	canvasTask, err = h.taskSvc.CreateTask(
+		canvas_task.CreateTaskRequest{
 			TaskId:    aiTask.TaskId,
 			ProjectID: projectID,
 			CanvasID:  req.CanvasID,
 			NodeID:    req.NodeID,
-			TaskType:  aioptions.TaskTypeVideo,
 			Provider:  aiTask.Provider,
 			Model:     req.Model,
 			Prompt:    req.Prompt,
-			Params: map[string]interface{}{
-				"prompt":         req.Prompt,
-				"model":          req.Model,
-				"duration":       req.Duration,
-				"referenceFiles": req.ReferenceFiles,
-				"aspectRatio":    req.AspectRatio,
-				"workspace":      req.Workspace,
+			TaskType:  aioptions.TaskTypeImage,
+			Workspace: req.Workspace,
+			Params: map[string]any{
+				"promptType":  req.PromptType,
+				"aspectRatio": req.AspectRatio,
 			},
-		}
-		task, createErr := h.taskSvc.CreateTask(createTaskRequest)
-		if createErr != nil {
-			validator.InternalServerError(ctx, createErr)
-			return
-		} else {
-			validator.Success(ctx, task)
-		}
+		},
+	)
+	if err != nil {
+		validator.InternalServerError(ctx, err)
+		return
 	}
+	validator.Success(ctx, canvasTask)
 }
 
 func (h *AIVideoHandler) GetTask(ctx iris.Context) {
+	projectID := ctx.Params().GetString("projectId")
+	if projectID == "" {
+		validator.InternalServerError(ctx, errors.New("projectID is required"))
+		return
+	}
+	taskId := ctx.Params().GetString("taskId")
+	if taskId == "" {
+		validator.InternalServerError(ctx, errors.New("taskId is required"))
+		return
+	}
+
+	task, err := h.videoSvc.GetTask(context.Background(), taskId)
+	if err != nil {
+		validator.InternalServerError(ctx, err)
+	} else {
+		validator.Success(ctx, task)
+	}
+}
+
+func (h *AIVideoHandler) GetTask2(ctx iris.Context) {
 	projectID := ctx.Params().GetString("projectId")
 	if projectID == "" {
 		validator.InternalServerError(ctx, errors.New("projectID is required"))

@@ -6,6 +6,7 @@ import (
 	"open-film-service/internal/ai"
 	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/config"
+	"open-film-service/internal/repository"
 )
 
 var (
@@ -67,14 +68,16 @@ type GenerationResult struct {
 }
 
 type Service struct {
-	config       *config.Config
-	videoService *ai.AiVideoService
+	config          *config.Config
+	videoService    *ai.AiVideoService
+	canvasTaskRepos *repository.CanvasTaskRepository
 }
 
-func NewService(config *config.Config, videoService *ai.AiVideoService) *Service {
+func NewService(config *config.Config, videoService *ai.AiVideoService, canvasTaskRepos *repository.CanvasTaskRepository) *Service {
 	return &Service{
-		config:       config,
-		videoService: videoService,
+		config:          config,
+		videoService:    videoService,
+		canvasTaskRepos: canvasTaskRepos,
 	}
 }
 
@@ -103,8 +106,12 @@ func (s *Service) NewTask(ctx context.Context, request AIGenerateVideoRequest) (
 	return s.videoService.NewTask(ctx, newTaskOptions)
 }
 
-func (s *Service) GetTask(ctx context.Context, model, taskId string) (*aioptions.Task, error) {
-	return s.videoService.GetTask(ctx, model, taskId)
+func (s *Service) GetTask(ctx context.Context, taskID string) (*aioptions.Task, error) {
+	task, err := s.canvasTaskRepos.GetByID(taskID)
+	if err != nil {
+		return nil, err
+	}
+	return s.videoService.GetTask(ctx, task.Model, taskID)
 }
 
 func (s *Service) GetModels(ctx context.Context) []aioptions.Model {

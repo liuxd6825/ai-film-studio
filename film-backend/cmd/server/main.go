@@ -245,7 +245,7 @@ func main() {
 	llmService := ai_llm.NewService(cfg, aiLLMService)
 	llmHandler := handler.NewAILLMHandler(llmService)
 
-	videoService := ai_video.NewService(cfg, aiVideoService)
+	videoService := ai_video.NewService(cfg, aiVideoService, canvasTaskRepo)
 	videoGenHandler := handler.NewAIVideoHandler(videoService, canvasTaskService)
 
 	imageService := ai_image.NewService(cfg, aiImageService, canvasTaskRepo)
