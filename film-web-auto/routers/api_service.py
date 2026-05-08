@@ -55,6 +55,8 @@ class ApiService:
         errors = []
         if not prompt or not prompt.strip():
             errors.append("prompt为必填项且不能为空")
+        elif len(prompt) > 1960:
+            errors.append("prompt长度不能超过1960个字符")
         if model is None:
             errors.append("model为必填项")
         elif model not in IMAGE_VALID["model"]:
@@ -73,6 +75,8 @@ class ApiService:
         errors = []
         if not prompt or not prompt.strip():
             errors.append("prompt为必填项且不能为空")
+        elif len(prompt) > 1960:
+            errors.append("prompt长度不能超过1960个字符")
         if model is None:
             errors.append("model为必填项")
         elif model not in VIDEO_VALID["model"]:
