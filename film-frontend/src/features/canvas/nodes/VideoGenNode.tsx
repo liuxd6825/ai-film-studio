@@ -486,6 +486,7 @@ export const VideoGenNode = memo(function VideoGenNode({
               videoUrl: result.resultUrl,
               previewVideoUrl: result.resultUrl,
               taskStatus: "completed",
+              mode: "prompt",
               taskProgress: 100,
             });
             clearInterval(pollingIntervalRef.current!);
