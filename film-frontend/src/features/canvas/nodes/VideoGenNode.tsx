@@ -17,7 +17,6 @@ import { videoApi, type GenerateVideoRequest, type VideoAiModel } from "../../..
 import { canvasTaskApi } from "../../../api/canvasTaskApi";
 import { canvasFileApi } from "../../../api/canvasFileApi";
 import { VideoSelectorModal } from "../ui/VideoSelectorModal";
-import { KeyframeModal } from "../ui/KeyframeModal";
 import { downloadUrl } from "../domain/downloadUtils";
 import { NodeToolbar } from "../ui/NodeToolbar";
 import { NodeTextarea } from "../components/NodeTextarea";
@@ -123,20 +122,18 @@ export const VideoGenNode = memo(function VideoGenNode({
   
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const openVideoViewer = useCanvasStore((s) => s.openVideoViewer);
-  const addKeyframe = useCanvasStore((s) => s.addKeyframe);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
   const openTextNodeOrderModal = useCanvasStore((s) => s.openTextNodeOrderModal);
+  const openKeyframeModal = useCanvasStore((s) => s.openKeyframeModal);
 
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
   const [showVideoSelector, setShowVideoSelector] = useState(false);
-  const [showKeyframeModal, setShowKeyframeModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableAIModels, setAvailableAIModels] = useState<VideoAiModel[]>([]);
   const [taskStatus, setTaskStatus] = useState(data.taskStatus || "idle");
   const [taskProgress, setTaskProgress] = useState(data.taskProgress || 0);
 
-  const [isUploading, setIsUploading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -297,7 +294,7 @@ export const VideoGenNode = memo(function VideoGenNode({
     }
 
     return images;
-  }, [edges, id, nodes]);
+  }, [edges, id, nodes, updateNodeData]);
 
   const handleRemoveImage = useCallback(
     (edgeId: string) => {
@@ -314,8 +311,6 @@ export const VideoGenNode = memo(function VideoGenNode({
         console.error("Missing projectId or canvasId");
         return;
       }
-
-      setIsUploading(true);
       try {
         const response = await canvasFileApi.upload(
           projectId,
@@ -333,7 +328,6 @@ export const VideoGenNode = memo(function VideoGenNode({
       } catch (error) {
         console.error("Failed to upload file:", error);
       } finally {
-        setIsUploading(false);
       }
     },
     [id, projectId, canvasId, updateNodeData],
@@ -644,6 +638,8 @@ export const VideoGenNode = memo(function VideoGenNode({
     data.aiModel,
     data.aspectRatio,
     id,
+    edges,
+    nodes,
     incomingImages,
     updateNodeData,
     startPolling,
@@ -728,24 +724,7 @@ export const VideoGenNode = memo(function VideoGenNode({
     setShowVideoSelector(false);
   }, []);
 
-  const handleOpenKeyframeModal = useCallback(() => {
-    setShowKeyframeModal(true);
-  }, []);
-
-  const handleExtractKeyframe = useCallback(
-    (timestamp: number, imageUrl: string, width?: number, height?: number) => {
-      if (!data.videoUrl) {
-        throw new Error("视频链接无效");
-      }
-      const keyframe = addKeyframe(id, timestamp, imageUrl, data.videoUrl, width, height);
-      if (!keyframe) {
-        throw new Error("无法添加关键帧，节点可能已被删除");
-      }
-    },
-    [id, data.videoUrl, addKeyframe],
-  );
-
-
+  
   const getVideoDuration = useCallback((): number => {
     return data.duration || 5;
   }, [data.duration]);
@@ -814,7 +793,9 @@ export const VideoGenNode = memo(function VideoGenNode({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            handleOpenKeyframeModal();
+            if (data.videoUrl) {
+              openKeyframeModal(id, data.videoUrl, getVideoDuration());
+            }
           }}
           className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
           title="关键帧"
@@ -1095,15 +1076,7 @@ export const VideoGenNode = memo(function VideoGenNode({
             onClose={handleCloseImageSelector}
           />
         )}
-        {showKeyframeModal && data.videoUrl && (
-          <KeyframeModal
-            nodeId={id}
-            videoUrl={data.videoUrl}
-            duration={getVideoDuration()}
-            onClose={() => setShowKeyframeModal(false)}
-            onExtract={handleExtractKeyframe}
-          />
-        )}
+
       </div>
       <ConfirmDialog
         open={showCancelConfirm}

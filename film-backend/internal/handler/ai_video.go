@@ -25,24 +25,6 @@ func NewAIVideoHandler(videoSvc *ai_video.Service, taskSvc *canvas_task.Service)
 	}
 }
 
-type AIGenerateVideoRequest struct {
-	CanvasID       string   `json:"canvas_id,omitempty"  validate:"required"`
-	NodeID         string   `json:"node_id,omitempty"  validate:"required"`
-	Prompt         string   `json:"prompt" validate:"required"`
-	Model          string   `json:"model"  validate:"required"`
-	AspectRatio    string   `json:"aspect_ratio,omitempty"  validate:"required"`
-	Duration       int      `json:"duration,omitempty"  validate:"required"`
-	ReferenceFiles []string `json:"reference_files,omitempty"`
-	Workspace      string   `json:"workspace"`
-}
-
-type AIGenerateVideoResponse struct {
-	TaskID    string `json:"task_id,omitempty"`
-	ResultID  string `json:"result_id"`
-	ResultURL string `json:"result_url"`
-	Status    int    `json:"status"`
-}
-
 func (h *AIVideoHandler) Generate(ctx iris.Context) {
 	projectID := ctx.Params().GetString("projectId")
 	if projectID == "" {
@@ -50,7 +32,7 @@ func (h *AIVideoHandler) Generate(ctx iris.Context) {
 		return
 	}
 
-	req, ok := validator.ParseAndValidate[AIGenerateVideoRequest](ctx)
+	req, ok := validator.ParseAndValidate[ai_video.AIGenerateVideoRequest](ctx)
 	if !ok {
 		return
 	}
@@ -67,24 +49,16 @@ func (h *AIVideoHandler) Generate(ctx iris.Context) {
 		}
 	}
 
-	aiReq := aioptions.NewTaskOptions{
-		Prompt:    req.Prompt,
-		Model:     req.Model,
-		Workspace: req.Workspace,
-		TaskType:  aioptions.TaskTypeVideo,
-		Video: aioptions.VideoOptions{
-			Resolution:    "2K",
-			Duration:      req.Duration,
-			AspectRatio:   req.AspectRatio,
-			GenerateAudio: true,
-		},
-		//Duration:       req.Duration,
-		//Fps:            strconv.Itoa(req.FPS),
-		//ReferenceFiles: req.ReferenceFiles,
-		//AspectRatio:    req.AspectRatio,
+	videoReq := ai_video.AIGenerateVideoRequest{
+		Prompt:         req.Prompt,
+		Model:          req.Model,
+		ReferenceFiles: req.ReferenceFiles,
+		AspectRatio:    req.AspectRatio,
+		Workspace:      req.Workspace,
+		Duration:       req.Duration,
 	}
 
-	aiTask, err := h.videoSvc.NewTask(ctx, aiReq)
+	aiTask, err := h.videoSvc.NewTask(ctx, videoReq)
 	if err != nil {
 		validator.InternalServerError(ctx, err)
 		return

@@ -62,6 +62,7 @@ async function extractFrame(
       if (timeoutId) clearTimeout(timeoutId);
       video.onseeked = null;
       video.onerror = null;
+      video.onloadedmetadata = null;
     };
 
     const resolveOnce = (value: { imageUrl: string; width: number; height: number }) => {
@@ -83,6 +84,11 @@ async function extractFrame(
     timeoutId = setTimeout(() => {
       rejectOnce(new Error("提取关键帧超时，请检查视频是否可加载"));
     }, timeout);
+
+    video.onloadedmetadata = () => {
+      console.log("[extractFrame] onloadedmetadata fired, readyState:", video.readyState);
+      video.currentTime = timestamp;
+    };
 
     video.onseeked = () => {
       console.log("[extractFrame] onseeked fired, videoWidth:", video.videoWidth, "videoHeight:", video.videoHeight);
@@ -111,7 +117,7 @@ async function extractFrame(
       rejectOnce(new Error("视频加载失败，请检查视频链接是否有效"));
     };
 
-    video.currentTime = timestamp;
+    video.load();
   });
 }
 
@@ -173,7 +179,7 @@ export function KeyframeModal({
     setExtractError(null);
     try {
       const frameData = await extractFrame(videoUrl, currentTime);
-      onExtract(currentTime, frameData.imageUrl, frameData.width, frameData.height);
+      await onExtract(currentTime, frameData.imageUrl, frameData.width, frameData.height);
       onClose();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "提取关键帧失败";

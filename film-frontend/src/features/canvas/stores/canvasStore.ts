@@ -103,6 +103,12 @@ interface CanvasState {
     isOpen: boolean;
     targetNodeId: string | null;
   };
+  keyframeModal: {
+    isOpen: boolean;
+    nodeId: string | null;
+    videoUrl: string | null;
+    duration: number;
+  };
 
   setProjectId: (projectId: string | null) => void;
   setCanvasName: (name: string | null) => void;
@@ -192,6 +198,8 @@ interface CanvasState {
   closeToolDialog: () => void;
   openTextNodeOrderModal: (nodeId: string) => void;
   closeTextNodeOrderModal: () => void;
+  openKeyframeModal: (nodeId: string, videoUrl: string, duration: number) => void;
+  closeKeyframeModal: () => void;
   setViewportState: (viewport: Viewport) => void;
   setCanvasViewportSize: (size: { width: number; height: number }) => void;
   openImageViewer: (imageUrl: string, imageList?: string[]) => void;
@@ -639,6 +647,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   textNodeOrderModal: {
     isOpen: false,
     targetNodeId: null,
+  },
+  keyframeModal: {
+    isOpen: false,
+    nodeId: null,
+    videoUrl: null,
+    duration: 5,
   },
 
   setProjectId: (projectId) => {
@@ -1846,6 +1860,28 @@ addEdge: (source, target, index) => {
       textNodeOrderModal: {
         isOpen: false,
         targetNodeId: null,
+      },
+    });
+  },
+
+  openKeyframeModal: (nodeId: string, videoUrl: string, duration: number) => {
+    set({
+      keyframeModal: {
+        isOpen: true,
+        nodeId,
+        videoUrl,
+        duration,
+      },
+    });
+  },
+
+  closeKeyframeModal: () => {
+    set({
+      keyframeModal: {
+        isOpen: false,
+        nodeId: null,
+        videoUrl: null,
+        duration: 5,
       },
     });
   },

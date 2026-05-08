@@ -28,9 +28,11 @@ import { VideoViewerModal } from "./ui/VideoViewerModal";
 import { TextContentModal } from "./ui/TextContentModal";
 import { TextNodeOrderModal } from "./ui/TextNodeOrderModal";
 import { KeyframePanel } from "./components/KeyframePanel";
+import { KeyframeModal } from "./ui/KeyframeModal";
 import { CustomEdge } from "./components/CustomEdge";
 import { useProjectStore } from "../../stores/projectStore";
 import { canvasApi } from "../../api/canvasApi";
+import { canvasFileApi } from "../../api/canvasFileApi";
 import { useThemeStore } from "@/stores/themeStore";
 
 function safeParseJson<T>(value: string, fallback: T): T {
@@ -89,11 +91,47 @@ export function Canvas() {
     setToolbarActions,
     textNodeOrderModal,
     closeTextNodeOrderModal,
+    keyframeModal,
+    closeKeyframeModal,
+    addKeyframe,
   } = useCanvasStore();
 
   const { currentProjectId } = useProjectStore();
   const { canvasId: canvasIdFromUrl } = useParams<{ canvasId: string }>();
   const prevCanvasIdRef = useRef<string | undefined>(undefined);
+
+  const handleKeyframeExtract = useCallback(
+    async (timestamp: number, imageUrl: string, width?: number, height?: number) => {
+      if (!keyframeModal.nodeId || !keyframeModal.videoUrl) {
+        throw new Error("无效的关键帧数据");
+      }
+      
+      try {
+        const base64Response = await fetch(imageUrl);
+        const blob = await base64Response.blob();
+        const file = new File([blob], `keyframe_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        const response = await canvasFileApi.upload(
+          currentProjectId || "default",
+          canvasIdFromUrl || "",
+          keyframeModal.nodeId,
+          file,
+        );
+        
+        const keyframe = addKeyframe(keyframeModal.nodeId, timestamp, response.downloadUrl, keyframeModal.videoUrl, width, height);
+        if (!keyframe) {
+          throw new Error("无法添加关键帧");
+        }
+      } catch (error) {
+        console.error("Failed to extract keyframe:", error);
+        const keyframe = addKeyframe(keyframeModal.nodeId, timestamp, imageUrl, keyframeModal.videoUrl, width, height);
+        if (!keyframe) {
+          throw new Error("无法添加关键帧");
+        }
+      }
+    },
+    [keyframeModal, addKeyframe, currentProjectId, canvasIdFromUrl],
+  );
   const { theme: themeMode } = useThemeStore();
   const isDark = themeMode === "dark";
 
@@ -730,6 +768,16 @@ export function Canvas() {
         <TextNodeOrderModal
           targetNodeId={textNodeOrderModal.targetNodeId}
           onClose={closeTextNodeOrderModal}
+        />
+      )}
+
+      {keyframeModal.isOpen && keyframeModal.nodeId && keyframeModal.videoUrl && (
+        <KeyframeModal
+          nodeId={keyframeModal.nodeId}
+          videoUrl={keyframeModal.videoUrl}
+          duration={keyframeModal.duration}
+          onClose={closeKeyframeModal}
+          onExtract={handleKeyframeExtract}
         />
       )}
     </div>
