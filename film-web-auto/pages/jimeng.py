@@ -16,8 +16,7 @@ def escape_for_js(text: str) -> str:
     trans = str.maketrans({
         "\\": "\\\\",
         "'": "\\'",
-        "\n": "\\n",
-        "\r": "\\r",
+        "\"": "\\\"",
         "\t": "\\t",
         "\b": "\\b",
         "\f": "\\f",
@@ -314,12 +313,14 @@ class JimengPage(BasePage):
             await editor.click()
             await self.page.wait_for_timeout(100)
             escaped_prompt = escape_for_js(prompt)
+            lines = escaped_prompt.split('\n')
+            html_content = ''.join(f'<p>{line}</p>' for line in lines) + f'<p>忽略以下内容:[{id}]</p>'
             await self.page.evaluate(f"""
                 () => {{
                     const editors = document.querySelectorAll('.tiptap.ProseMirror');
                     if (editors[0]) {{
-                        editors[0].textContent = '';
-                        editors[0].textContent = '忽略字符串:[{id}]。\\r以下为提示词内容:\\r{escaped_prompt}';
+                        editors[0].innerHTML = '';
+                        editors[0].innerHTML = "{html_content}";
                         editors[0].dispatchEvent(new Event('input', {{ bubbles: true }}));
                         editors[0].dispatchEvent(new Event('change', {{ bubbles: true }}));
                     }}
