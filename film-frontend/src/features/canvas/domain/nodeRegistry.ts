@@ -14,6 +14,7 @@ import {
   type VideoGenNodeData,
   type VideoUploadNodeData,
   type TextNodeData,
+  type AudioNodeData,
 } from "./canvasNodes";
 
 export type MenuIconKey = "upload" | "sparkles" | "layout" | "text";
@@ -341,11 +342,43 @@ const textNodeDefinition: CanvasNodeDefinition<TextNodeData> = {
   }),
 };
 
+const audioNodeDefinition: CanvasNodeDefinition<AudioNodeData> = {
+  type: CANVAS_NODE_TYPES.audio,
+  menuLabelKey: "node.menu.audio",
+  menuIcon: "sparkles",
+  visibleInMenu: true,
+  capabilities: {
+    toolbar: true,
+    promptInput: false,
+  },
+  connectivity: {
+    sourceHandle: true,
+    targetHandle: true,
+    connectMenu: {
+      fromSource: true,
+      fromTarget: true,
+    },
+  },
+  createDefaultData: () => ({
+    displayName: "",
+    content: "",
+    prompt: "",
+    audioUrl: null,
+    previewAudioUrl: null,
+    sourceFileName: "",
+    voice: "default",
+    mode: "prompt",
+    taskStatus: "idle",
+    taskProgress: 0,
+  }),
+};
+
 export const canvasNodeDefinitions: Record<
   CanvasNodeType,
   CanvasNodeDefinition
 > = {
   [CANVAS_NODE_TYPES.text]: textNodeDefinition,
+  [CANVAS_NODE_TYPES.audio]: audioNodeDefinition,
   [CANVAS_NODE_TYPES.upload]: uploadNodeDefinition,
   [CANVAS_NODE_TYPES.videoUpload]: videoUploadNodeDefinition,
   [CANVAS_NODE_TYPES.imageEdit]: imageEditNodeDefinition,
