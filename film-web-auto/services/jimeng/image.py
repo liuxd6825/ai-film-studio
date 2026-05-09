@@ -25,7 +25,7 @@ class ImageGenerationService(BaseService):
         jimeng = None
         task_service = TaskService(session)
         try:
-            jimeng = JimengPage(page = None, workspace=workspace)
+            jimeng = JimengPage(page = None, workspace=workspace, type="image")
 
             if not await jimeng.wait_for_login_v2(headless=settings.BROWSER_HEADLESS):
                 data = {
@@ -49,7 +49,7 @@ class ImageGenerationService(BaseService):
 
             await jimeng.close_modal_dialog()
 
-            await jimeng.select_generation_mode("图片生成")
+            # await jimeng.select_generation_mode("图片生成")
             await jimeng.select_model(model)
 
             await jimeng.open_settings_popup()

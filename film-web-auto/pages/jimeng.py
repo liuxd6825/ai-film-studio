@@ -27,8 +27,8 @@ def escape_for_js(text: str) -> str:
 
 
 class JimengPage(BasePage):
-    def __init__(self, page=None, workspace: str = "0"):
-        url = f"{settings.JIMENG_URL}?workspace={workspace}"
+    def __init__(self, page=None, workspace: str = "0", type: str = "agentic"):
+        url = f"{settings.JIMENG_URL}?type={type}&workspace={workspace}"
         super().__init__(page, url)
 
     async def _load_page(self, headless: bool = False):
@@ -172,6 +172,7 @@ class JimengPage(BasePage):
         except Exception as e:
             print(f"Error in select_generation_mode: {e}")
             await self._close_any_open_dropdown()
+            raise Exception(f"[JimengPage] select_generation_mode: {e}")
 
     async def select_model(self, model: str):
         await self._close_any_open_dropdown()
@@ -184,7 +185,8 @@ class JimengPage(BasePage):
             model_selector = all_selects[1]
 
         if not model_selector:
-            return
+            raise Exception(f"[JimengPage] select_model: 未找到包含 '{model}' 的选项")
+            # return
 
         await model_selector.click(force=True)
         await self.page.wait_for_timeout(2000)
@@ -197,6 +199,8 @@ class JimengPage(BasePage):
         model_option = self.page.locator(".lv-select-option").filter(has_text=model)
         if await model_option.count() > 0:
             await model_option.first.click(force=True)
+        else:
+            raise Exception(f"[JimengPage] select_model: 未找到包含 '{model}' 的选项")
 
         await self.page.wait_for_timeout(500)
         await self._close_any_open_dropdown()
@@ -248,6 +252,7 @@ class JimengPage(BasePage):
                 return
 
             print(f"[JimengPage] select_model_v2: 未找到包含 '{model}' 的选项")
+            raise Exception(f"[JimengPage] select_model_v2: 未找到包含 '{model}' 的选项")
 
         await self._close_any_open_dropdown()
 
@@ -289,7 +294,11 @@ class JimengPage(BasePage):
 
             if target_opt:
                 await target_opt.click(force=True)
+            else:
+                raise Exception(f"[JimengPage] select_reference_type: 未找到包含 '{ref_type}' 的选项")
             await self.page.wait_for_timeout(500)
+        else:
+            raise Exception(f"[JimengPage] select_reference_type: 未找到包含 '{ref_type}' 的选项")
 
     async def upload_reference_images(self, file_paths: list[str]):
         for path in file_paths:
@@ -297,13 +306,14 @@ class JimengPage(BasePage):
             if await file_input.count() > 0:
                 await file_input.first.set_input_files(path)
             else:
-                upload_btn = self.page.locator(".reference-upload-Iq2Aoa")
-                if await upload_btn.count() > 0:
-                    await upload_btn.first.click()
-                    await self.page.wait_for_timeout(300)
-                    file_input = self.page.locator("div[class^='entry-'] div[class^='references-'] input[type='file']")
-                    if await file_input.count() > 0:
-                        await file_input.first.set_input_files(path)
+                raise Exception(f"[JimengPage] upload_reference_images: 未找到文件上传组件元素")
+                # upload_btn = self.page.locator(".reference-upload-Iq2Aoa")
+                # if await upload_btn.count() > 0:
+                #     await upload_btn.first.click()
+                #     await self.page.wait_for_timeout(300)
+                #     file_input = self.page.locator("div[class^='entry-'] div[class^='references-'] input[type='file']")
+                #     if await file_input.count() > 0:
+                #         await file_input.first.set_input_files(path)
             await self.page.wait_for_timeout(500)
 
     async def input_prompt(self, prompt: str) -> str:
@@ -327,9 +337,10 @@ class JimengPage(BasePage):
                 }}
             """)
         else:
-            textarea = self.page.locator("div[class^='prompt-editor-'] textarea")
-            if await textarea.count() > 0:
-                await textarea.first.fill(prompt)
+            raise Exception(f"[JimengPage] input_prompt: 未找到包含提示词输入的选项")
+            # textarea = self.page.locator("div[class^='prompt-editor-'] textarea")
+            # if await textarea.count() > 0:
+            #     await textarea.first.fill(prompt)
         return id
 
     async def open_settings_popup(self):
@@ -357,6 +368,7 @@ class JimengPage(BasePage):
                 return
 
         print(f"[JimengPage] select_aspect_ratio: 未找到包含 '{ratio}' 的选项")
+        raise Exception(f"[JimengPage] select_aspect_ratio: 未找到包含 '{ratio}' 的选项")
 
     async def select_resolution(self, resolution: str):
         if not resolution:
@@ -376,6 +388,7 @@ class JimengPage(BasePage):
                 return
 
         print(f"[JimengPage] select_resolution: 未找到包含 '{resolution}' 的选项")
+        raise Exception(f"[JimengPage] select_resolution: 未找到包含 '{resolution}' 的选项")
 
     async def set_dimensions(self, width: int = None, height: int = None):
         if not await self.page.locator("#dreamina-ui-configuration-content-wrapper").count() > 0:
@@ -461,7 +474,7 @@ class JimengPage(BasePage):
         }
 
     async def wait_for_generation_complete_v2(self, timeout: int = 10000) -> dict:
-        await self.page.wait_for_timeout(1000)
+        await self.page.wait_for_timeout(3000)
 
         waiting_texts = ["智能创意中", "造梦中", "排队加速中", "排队中"]
         invalid_texts = ["图片不符合平台规则", "素材中包含人脸信息", "网络不顺畅", "服务器拥挤", "生成已取消",
@@ -486,11 +499,11 @@ class JimengPage(BasePage):
                 flag = 0
                 while div_box_count == 0:
                     if flag > 120:
+                        print(f"[JimengPage] 没有找到内容列表, div[class^='record-box-wrapper-']")
                         return {
                             "status": "failed",
                             "message": "没有找到内容列表, div[class^='record-box-wrapper-']"
                         }
-                    print()
                     await self.page.wait_for_timeout(1000)
                     flag += 1
                     div_box_count = await div_box.count()
@@ -546,6 +559,7 @@ class JimengPage(BasePage):
 
         await self._close_any_open_dropdown()
         print(f"[JimengPage] select_aspect_ratio_v2: 未找到包含 '{ratio}' 的选项")
+        raise Exception(f"[JimengPage] select_aspect_ratio_v2: 未找到包含 '{ratio}' 的选项")
 
     async def set_seed(self, seed: str):
         if not seed:
@@ -570,8 +584,10 @@ class JimengPage(BasePage):
                 await self.page.wait_for_timeout(300)
             else:
                 print(f"[JimengPage] set_seed: 未找到 seed={seed} 的选项")
+                raise Exception(f"[JimengPage] set_seed: 未找到 seed={seed} 的选项")
         else:
             print(f"[JimengPage] set_seed: 未找到 seed 选择器")
+            raise Exception(f"[JimengPage] set_seed: 未找到 seed 选择器")
 
     async def close_modal_dialog(self):
         for _ in range(5):
