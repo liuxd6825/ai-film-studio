@@ -24,6 +24,17 @@ export const EditableNodeTitle = memo(function EditableNodeTitle({
     setTimeout(() => inputRef.current?.focus(), 0);
   }, [title]);
 
+  const handleSave = useCallback(() => {
+    const trimmed = editValue.slice(0, maxLength).trim();
+    onSave(trimmed);
+    setIsEditing(false);
+  }, [editValue, maxLength, onSave]);
+
+  const handleCancel = useCallback(() => {
+    setEditValue(title);
+    setIsEditing(false);
+  }, [title]);
+
   const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
