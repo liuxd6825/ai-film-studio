@@ -141,7 +141,7 @@ class JimengDownload:
             return
 
         file_names = task_result.get("file_names", [])
-        if file_names:
+        if file_names and len(file_names) > 0:
             res_list = [{"id": str(uuid.uuid4()), "file_name": fn} for fn in file_names]
             await task_service.add_results_to_task(task.id, res_list)
             await task_service.update_task_status(task.id, "completed")
