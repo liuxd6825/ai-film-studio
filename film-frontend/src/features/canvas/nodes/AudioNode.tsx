@@ -471,7 +471,7 @@ export const AudioNode = memo(function AudioNode({
       <div
         className={`min-w-[200px] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${
           selected ? "border-2 border-blue-500" : ""
-        } shadow-md relative group`}
+        } relative group`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
