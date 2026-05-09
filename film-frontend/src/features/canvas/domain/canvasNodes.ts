@@ -242,10 +242,10 @@ export type AudioTaskStatus =
 export interface AudioNodeData extends NodeDisplayData {
   content: string;
   prompt: string;
-  audioUrl: string | null;
-  previewAudioUrl: string | null;
-  sourceFileName: string;
-  voice: string;
+  audioUrl?: string | null;
+  previewAudioUrl?: string | null;
+  sourceFileName?: string | null;
+  voice?: string;
   mode: 'prompt' | 'upload';
   taskStatus: AudioTaskStatus;
   taskProgress: number;
@@ -378,6 +378,12 @@ export function isVideoUploadNode(
   node: CanvasNode | null | undefined,
 ): node is CanvasNode & { data: VideoUploadNodeData } {
   return node?.type === CANVAS_NODE_TYPES.videoUpload;
+}
+
+export function isAudioNode(
+  node: CanvasNode | null | undefined,
+): node is CanvasNode & { data: AudioNodeData } {
+  return node?.type === CANVAS_NODE_TYPES.audio;
 }
 
 export function nodeHasVideo(node: CanvasNode | null | undefined): boolean {
