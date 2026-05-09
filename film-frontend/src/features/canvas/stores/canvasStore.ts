@@ -81,6 +81,11 @@ interface CanvasState {
     videoList: string[];
     currentIndex: number;
   };
+  audioPlayer: {
+    isOpen: boolean;
+    audioUrl: string | null;
+    fileName: string | null;
+  };
   contentEditor: {
     isOpen: boolean;
     nodeId: string | null;
@@ -208,6 +213,8 @@ interface CanvasState {
   openVideoViewer: (videoUrl: string, videoList?: string[]) => void;
   closeVideoViewer: () => void;
   navigateVideoViewer: (direction: "prev" | "next") => void;
+  openAudioPlayer: (audioUrl: string, fileName?: string) => void;
+  closeAudioPlayer: () => void;
   openContentEditor: (nodeId: string, content: string) => void;
   closeContentEditor: () => void;
   updateContentEditorContent: (content: string) => void;
@@ -631,6 +638,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     videoList: [],
     currentIndex: 0,
   },
+  audioPlayer: {
+    isOpen: false,
+    audioUrl: null,
+    fileName: null,
+  },
   contentEditor: {
     isOpen: false,
     nodeId: null,
@@ -962,6 +974,26 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         },
       });
     }
+  },
+
+  openAudioPlayer: (audioUrl: string, fileName?: string) => {
+    set({
+      audioPlayer: {
+        isOpen: true,
+        audioUrl,
+        fileName: fileName || null,
+      },
+    });
+  },
+
+  closeAudioPlayer: () => {
+    set({
+      audioPlayer: {
+        isOpen: false,
+        audioUrl: null,
+        fileName: null,
+      },
+    });
   },
 
   openContentEditor: (nodeId: string, content: string) => {

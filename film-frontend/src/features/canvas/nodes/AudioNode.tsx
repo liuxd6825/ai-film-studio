@@ -27,7 +27,7 @@ export const AudioNode = memo(function AudioNode({
   const projectId = useCanvasStore((s) => s.projectId);
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
-  const openContentEditor = useCanvasStore((s) => s.openContentEditor);
+  const openAudioPlayer = useCanvasStore((s) => s.openAudioPlayer);
 
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -283,10 +283,10 @@ export const AudioNode = memo(function AudioNode({
 
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    if (effectiveMode === 'prompt') {
-      openContentEditor(id, data.content || "");
+    if (data.audioUrl) {
+      openAudioPlayer(data.audioUrl, data.sourceFileName || "audio");
     }
-  }, [effectiveMode, id, data.content, openContentEditor]);
+  }, [data.audioUrl, data.sourceFileName, openAudioPlayer]);
 
   const handleClosePanel = useCallback(() => {
     setShowFloatingPanel(false);
