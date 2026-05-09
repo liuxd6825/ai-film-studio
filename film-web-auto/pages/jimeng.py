@@ -27,8 +27,8 @@ def escape_for_js(text: str) -> str:
 
 
 class JimengPage(BasePage):
-    def __init__(self, page=None, workspace: str = "0"):
-        url = f"{settings.JIMENG_URL}?workspace={workspace}"
+    def __init__(self, page=None, workspace: str = "0", type: str = "agentic"):
+        url = f"{settings.JIMENG_URL}?type={type}&workspace={workspace}"
         super().__init__(page, url)
 
     async def _load_page(self, headless: bool = False):

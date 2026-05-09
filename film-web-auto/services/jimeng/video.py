@@ -24,7 +24,7 @@ class VideoGenerationService(BaseService):
         jimeng = None
         task_service = TaskService(session)
         try:
-            jimeng = JimengPage(page = None, workspace=workspace)
+            jimeng = JimengPage(page = None, workspace=workspace, type="video")
             
             if not await jimeng.wait_for_login_v2():
                 data = {
@@ -48,7 +48,7 @@ class VideoGenerationService(BaseService):
 
             await jimeng.close_modal_dialog()
 
-            await jimeng.select_generation_mode("视频生成")
+            # await jimeng.select_generation_mode("视频生成")
             await jimeng.select_reference_type(work_type)
             await jimeng.select_model_v2(model)
 
