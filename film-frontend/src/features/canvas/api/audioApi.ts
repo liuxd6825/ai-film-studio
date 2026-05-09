@@ -27,14 +27,14 @@ export interface AudioTask {
 
 export const audioApi = {
   generate: (projectId: string, req: AudioGenerateRequest): Promise<AudioTask> =>
-    api.post(`/projects/${projectId}/audio/generate`, req),
+    api.post(`/api/v1/projects/${projectId}/audio/generate`, req),
 
   getModels: (projectId: string): Promise<AudioModel[]> =>
-    api.get(`/projects/${projectId}/audio/models`),
+    api.get(`/api/v1/projects/${projectId}/audio/models`),
 
   getVoices: (projectId: string): Promise<Voice[]> =>
-    api.get(`/projects/${projectId}/audio/voices`),
+    api.get(`/api/v1/projects/${projectId}/audio/voices`),
 
   getTask: (projectId: string, taskId: string): Promise<AudioTask> =>
-    api.get(`/projects/${projectId}/audio/task?taskId=${taskId}`),
+    api.get(`/api/v1/projects/${projectId}/audio/task?taskId=${taskId}`),
 };
