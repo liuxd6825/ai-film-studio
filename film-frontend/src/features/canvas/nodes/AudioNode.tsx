@@ -411,19 +411,17 @@ export const AudioNode = memo(function AudioNode({
   return (
     <>
       <NodeToolbar nodeId={id} visible={selected && !isGenerating}>
-        {effectiveMode === 'upload' && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              fileInputRef.current?.click();
-            }}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-            title="替换"
-          >
-            <Upload className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            fileInputRef.current?.click();
+          }}
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+          title="上传"
+        >
+          <Upload className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        </button>
         <button
           type="button"
           onClick={handlePreview}
