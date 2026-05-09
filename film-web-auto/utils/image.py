@@ -1,10 +1,28 @@
 import os
 import uuid
+import re
 import aiohttp
 import asyncio
 import time
 from pathlib import Path
 from core.config import settings
+
+
+def extract_filename_from_content_disposition(header_value: str) -> str | None:
+    if not header_value:
+        return None
+    match = re.search(r"filename\*=(?:UTF-8'')?([^;\n]*)", header_value, re.IGNORECASE)
+    if match:
+        filename = match.group(1).strip()
+        try:
+            from urllib.parse import unquote
+            return unquote(filename)
+        except Exception:
+            return filename
+    match = re.search(r'filename=(?:[\'"]?)([^;\'"\n]*)', header_value)
+    if match:
+        return match.group(1).strip('"\'')
+    return None
 
 
 def get_file_ext(url: str) -> str:
@@ -16,19 +34,30 @@ def get_file_ext(url: str) -> str:
 
 async def download_image(url: str, cache_dir: str) -> str:
     Path(cache_dir).mkdir(parents=True, exist_ok=True)
-    
-    filename = f"{uuid.uuid4()}{get_file_ext(url)}"
-    filepath = os.path.join(cache_dir, filename)
-    
+
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status != 200:
                 raise ValueError(f"Failed to download {url}: {response.status}")
-            
+
+            content_disposition = response.headers.get("Content-Disposition", "")
+            filename = extract_filename_from_content_disposition(content_disposition)
+            if filename:
+                ext = os.path.splitext(filename)[1].lower()
+                if ext:
+                    ext = ext if ext else get_file_ext(url)
+                else:
+                    ext = get_file_ext(url)
+            else:
+                ext = get_file_ext(url)
+
             content = await response.read()
-            with open(filepath, "wb") as f:
-                f.write(content)
-    
+
+    filename = f"{uuid.uuid4()}{ext}"
+    filepath = os.path.join(cache_dir, filename)
+    with open(filepath, "wb") as f:
+        f.write(content)
+
     return filepath
 
 

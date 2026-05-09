@@ -8,7 +8,8 @@ aiohttp
 sqlalchemy[asyncio]
 asyncpg
 pyyaml
-cent
+mutagen
+opencv-python-headless
 mcp[sse]
 sse-starlette
 playwright-stealth
