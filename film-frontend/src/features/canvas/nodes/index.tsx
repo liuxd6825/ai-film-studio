@@ -9,6 +9,7 @@ import { GroupNode } from "./GroupNode";
 import { VideoGenNode } from "./VideoGenNode";
 import { VideoNode } from "./VideoNode";
 import { TextNode } from "./TextNode";
+import { AudioNode } from "./AudioNode";
 
 export {
   ImageNode,
@@ -21,6 +22,7 @@ export {
   VideoGenNode,
   VideoNode,
   TextNode,
+  AudioNode,
 };
 
 export const nodeTypes = {
@@ -34,4 +36,5 @@ export const nodeTypes = {
   [CANVAS_NODE_TYPES.videoGen]: VideoGenNode,
   [CANVAS_NODE_TYPES.videoUpload]: VideoNode,
   [CANVAS_NODE_TYPES.text]: TextNode,
+  [CANVAS_NODE_TYPES.audio]: AudioNode,
 };
