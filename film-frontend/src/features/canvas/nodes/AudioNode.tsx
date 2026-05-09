@@ -93,6 +93,56 @@ export const AudioNode = memo(function AudioNode({
     }
   }, [showFloatingPanel, projectId]);
 
+  const startPolling = useCallback(
+    (taskId: string) => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+
+      pollingIntervalRef.current = setInterval(async () => {
+        try {
+          const result = await canvasTaskApi.poll(projectId || "default", taskId);
+          setTaskStatus(result.statusText as AudioTaskStatus);
+          setTaskProgress(result.progress);
+
+          if (result.statusText === "completed") {
+            updateNodeData(id, {
+              audioUrl: result.resultUrl,
+              previewAudioUrl: result.resultUrl,
+              taskStatus: "completed",
+              taskProgress: 100,
+            });
+            clearInterval(pollingIntervalRef.current!);
+            setIsGenerating(false);
+          } else if (result.statusText === "failed") {
+            setError(result.errorMessage || "生成失败");
+            updateNodeData(id, {
+              taskStatus: "failed",
+              errorMessage: result.errorMessage,
+            });
+            clearInterval(pollingIntervalRef.current!);
+            setIsGenerating(false);
+          } else if (result.statusText === "cancelled") {
+            updateNodeData(id, { taskStatus: "cancelled" });
+            clearInterval(pollingIntervalRef.current!);
+            setIsGenerating(false);
+          } else if (
+            result.statusText === "processing" ||
+            result.statusText === "pending"
+          ) {
+            updateNodeData(id, {
+              taskStatus: result.statusText,
+              taskProgress: result.progress,
+            });
+          }
+        } catch (err) {
+          console.error("Poll error:", err);
+        }
+      }, 30000);
+    },
+    [projectId, id, updateNodeData],
+  );
+
   useEffect(() => {
     return () => {
       if (pollingIntervalRef.current) {
@@ -266,58 +316,6 @@ export const AudioNode = memo(function AudioNode({
       e.target.style.height = `${e.target.scrollHeight}px`;
     },
     [id, updateNodeData],
-  );
-
-  const startPolling = useCallback(
-    (taskId: string) => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-
-      pollingIntervalRef.current = setInterval(async () => {
-        try {
-          const result = await canvasTaskApi.poll(projectId || "default", taskId);
-          setTaskStatus(result.statusText as AudioTaskStatus);
-          setTaskProgress(result.progress);
-
-          if (result.statusText === "completed") {
-            updateNodeData(id, {
-              audioUrl: result.resultUrl,
-              previewAudioUrl: result.resultUrl,
-              taskStatus: "completed",
-              taskProgress: 100,
-            });
-            clearInterval(pollingIntervalRef.current!);
-            setIsGenerating(false);
-          } else if (result.statusText === "failed") {
-            setError(result.errorMessage || "生成失败");
-            updateNodeData(id, {
-              taskStatus: "failed",
-              errorMessage: result.errorMessage,
-            });
-            clearInterval(pollingIntervalRef.current!);
-            setIsGenerating(false);
-          } else if (result.statusText === "cancelled") {
-            updateNodeData(id, { taskStatus: "cancelled" });
-            clearInterval(pollingIntervalRef.current!);
-            setIsGenerating(false);
-          } else if (
-            result.statusText === "processing" ||
-            result.statusText === "pending"
-          ) {
-            updateNodeData(id, {
-              taskStatus: result.statusText,
-              taskProgress: result.progress,
-            });
-          }
-        } catch (err) {
-          console.error("Poll error:", err);
-          clearInterval(pollingIntervalRef.current!);
-          setIsGenerating(false);
-        }
-      }, 30000);
-    },
-    [projectId, id, updateNodeData],
   );
 
   const handleGenerate = useCallback(async () => {
