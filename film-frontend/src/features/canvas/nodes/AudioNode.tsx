@@ -76,12 +76,9 @@ export const AudioNode = memo(function AudioNode({
   }, [showFloatingPanel]);
 
   useEffect(() => {
-    if (showFloatingPanel && data.prompt && panelRef.current) {
-      const textarea = panelRef.current.querySelector("textarea");
-      if (textarea) {
-        textarea.style.height = "auto";
-        textarea.style.height = `${textarea.scrollHeight}px`;
-      }
+    if (showFloatingPanel && data.prompt && promptTextareaRef.current) {
+      promptTextareaRef.current.style.height = "auto";
+      promptTextareaRef.current.style.height = `${promptTextareaRef.current.scrollHeight}px`;
     }
   }, [showFloatingPanel, data.prompt]);
 
@@ -110,37 +107,9 @@ export const AudioNode = memo(function AudioNode({
       setTaskStatus(data.taskStatus);
       setTaskProgress(data.taskProgress || 0);
       setIsGenerating(true);
-
-      canvasTaskApi
-        .poll(projectId || "default", taskId)
-        .then((result) => {
-          setTaskStatus(result.statusText as AudioTaskStatus);
-          setTaskProgress(result.progress);
-
-          if (result.statusText === "completed") {
-            updateNodeData(id, {
-              audioUrl: result.resultUrl,
-              previewAudioUrl: result.resultUrl,
-              taskStatus: "completed",
-              taskProgress: 100,
-            });
-            setIsGenerating(false);
-          } else if (result.statusText === "failed") {
-            updateNodeData(id, {
-              taskStatus: "failed",
-              errorMessage: result.errorMessage,
-            });
-            setIsGenerating(false);
-          } else {
-            startPolling(taskId);
-          }
-        })
-        .catch((err) => {
-          console.error("Resume poll error:", err);
-          startPolling(taskId);
-        });
+      startPolling(taskId);
     }
-  }, []);
+  }, [id, projectId, data.taskId, data.taskStatus, data.taskProgress, startPolling]);
 
   const handleFile = useCallback(
     async (file: File) => {
