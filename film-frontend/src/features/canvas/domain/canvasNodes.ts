@@ -246,6 +246,7 @@ export interface AudioNodeData extends NodeDisplayData {
   previewAudioUrl?: string | null;
   sourceFileName?: string | null;
   voice?: string;
+  aiModel?: string;
   mode: 'prompt' | 'upload';
   taskStatus: AudioTaskStatus;
   taskProgress: number;

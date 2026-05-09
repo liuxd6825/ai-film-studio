@@ -367,6 +367,7 @@ const audioNodeDefinition: CanvasNodeDefinition<AudioNodeData> = {
     previewAudioUrl: null,
     sourceFileName: "",
     voice: "default",
+    aiModel: "veo",
     mode: "prompt",
     taskStatus: "idle",
     taskProgress: 0,
