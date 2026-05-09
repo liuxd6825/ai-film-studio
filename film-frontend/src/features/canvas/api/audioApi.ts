@@ -20,7 +20,7 @@ export interface AudioGenerateRequest {
 
 export interface AudioTask {
   id: string;
-  status: string;
+  status: "pending" | "processing" | "completed" | "failed";
   resultUrl?: string;
   errorMessage?: string;
 }
