@@ -44,6 +44,7 @@ type Handler struct {
 	Category       *CategoryHandler
 	AIImageHandler *AIImageHandler
 	AIModel        *AIModelHandler
+	AIAudioHandler *AIAudioHandler
 	AIVideoHandler *AIVideoHandler
 	CanvasFile     *CanvasFileHandler
 	CanvasTask     *CanvasTaskHandler
@@ -86,6 +87,7 @@ func NewHandler(
 	categoryHandler *CategoryHandler,
 	aiImageHandler *AIImageHandler,
 	aiModelHandler *AIModelHandler,
+	aiAudioHandler *AIAudioHandler,
 	aiVideoHandler *AIVideoHandler,
 	canvasFileHandler *CanvasFileHandler,
 	canvasTaskHandler *CanvasTaskHandler,
@@ -127,6 +129,7 @@ func NewHandler(
 		Category:       categoryHandler,
 		AIImageHandler: aiImageHandler,
 		AIModel:        aiModelHandler,
+		AIAudioHandler: aiAudioHandler,
 		AIVideoHandler: aiVideoHandler,
 		CanvasFile:     canvasFileHandler,
 		CanvasTask:     canvasTaskHandler,
