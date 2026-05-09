@@ -9,6 +9,7 @@ export const CANVAS_NODE_TYPES = {
   videoGen: "videoGenNode",
   videoUpload: "videoUploadNode",
   text: "textNode",
+  audio: "audioNode",
 } as const;
 
 export type CanvasNodeType =
@@ -229,6 +230,30 @@ export interface TextNodeData extends NodeDisplayData {
   height?: number;
 }
 
+export type AudioTaskStatus =
+  | "idle"
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "unknown";
+
+export interface AudioNodeData extends NodeDisplayData {
+  content: string;
+  prompt: string;
+  audioUrl: string | null;
+  previewAudioUrl: string | null;
+  sourceFileName: string;
+  voice: string;
+  mode: 'prompt' | 'upload';
+  taskStatus: AudioTaskStatus;
+  taskProgress: number;
+  taskId?: string;
+  errorMessage?: string;
+  fileSize?: number;
+}
+
 export type CanvasNodeData =
   | UploadImageNodeData
   | ExportImageNodeData
@@ -239,7 +264,8 @@ export type CanvasNodeData =
   | StoryboardGenNodeData
   | VideoGenNodeData
   | VideoUploadNodeData
-  | TextNodeData;
+  | TextNodeData
+  | AudioNodeData;
 
 export interface CanvasNode {
   id: string;
