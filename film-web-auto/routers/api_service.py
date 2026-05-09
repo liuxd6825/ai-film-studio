@@ -10,6 +10,10 @@ from schemas.response import Result
 from utils.image import download_images
 import uuid
 import asyncio
+import os
+import cv2
+from mutagen.mp3 import MP3
+from mutagen.wave import WAVE
 
 
 IMAGE_VALID = {
@@ -103,6 +107,115 @@ class ApiService:
             errors.append(f"model无效,可选值:{','.join(GEMINI_IMAGE_VALID['model'])}")
         return errors
 
+    def _get_video_duration(self, filepath: str) -> float:
+        try:
+            cap = cv2.VideoCapture(filepath)
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+            cap.release()
+            if fps > 0:
+                return frame_count / fps
+            return 0.0
+        except Exception:
+            return 0.0
+
+    def _get_audio_duration(self, filepath: str) -> float:
+        try:
+            ext = os.path.splitext(filepath.lower())[1]
+            if ext == ".mp3":
+                audio = MP3(filepath)
+            elif ext == ".wav":
+                audio = WAVE(filepath)
+            else:
+                return 0.0
+            return audio.info.length
+        except Exception:
+            return 0.0
+
+    def _get_image_resolution(self, filepath: str) -> tuple[int, int] | None:
+        try:
+            img = cv2.imread(filepath)
+            if img is not None:
+                h, w = img.shape[:2]
+                return (w, h)
+            return None
+        except Exception:
+            return None
+
+    def _validate_resolution(self, width: int, height: int, filename: str) -> list[str]:
+        errors = []
+        min_side = min(width, height)
+        max_side = max(width, height)
+
+        if width > 4096 or height > 4096:
+            errors.append(f"{filename}: 最大分辨率4096×4096")
+        if min_side < 320:
+            errors.append(f"{filename}: 最短边需≥320px")
+        if max_side / min_side > 3:
+            errors.append(f"{filename}: 宽高比需在1:3~3:1之间")
+
+        return errors
+
+    def _validate_video_files(self, files: list[str]) -> list[str]:
+        errors = []
+        if not files:
+            return errors
+
+        image_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif", ".gif"}
+        video_exts = {".mp4", ".mov"}
+        audio_exts = {".mp3", ".wav"}
+
+        image_count = 0
+        video_count = 0
+        audio_count = 0
+        total_video_audio_duration = 0.0
+        total_video_size = 0
+        total_audio_size = 0
+
+        for filepath in files:
+            if not os.path.isfile(filepath):
+                errors.append(f"文件不存在:{filepath}")
+                continue
+            ext = os.path.splitext(filepath.lower())[1]
+            size = os.path.getsize(filepath)
+
+            if ext in image_exts:
+                image_count += 1
+                if size > 30 * 1024 * 1024:
+                    errors.append(f"图片文件大小不能超过30MB:{os.path.basename(filepath)}")
+                resolution_errors = self._validate_resolution(*resolution, os.path.basename(filepath)) if (resolution := self._get_image_resolution(filepath)) else ["图片无法读取分辨率"]
+                errors.extend(resolution_errors)
+            elif ext in video_exts:
+                video_count += 1
+                total_video_size += size
+                duration = self._get_video_duration(filepath)
+                total_video_audio_duration += duration
+            elif ext in audio_exts:
+                audio_count += 1
+                total_audio_size += size
+                duration = self._get_audio_duration(filepath)
+                total_video_audio_duration += duration
+
+        if image_count > 9:
+            errors.append(f"图片最多上传9张，当前上传{image_count}张")
+        if video_count > 3:
+            errors.append(f"视频最多上传3个，当前上传{video_count}个")
+        if audio_count > 3:
+            errors.append(f"音频最多上传3个，当前上传{audio_count}个")
+        if image_count + video_count + audio_count > 12:
+            errors.append(f"总文件数上限12个，当前上传{image_count + video_count + audio_count}个")
+
+        if total_video_size > 50 * 1024 * 1024:
+            errors.append(f"视频总大小限制50MB，当前{total_video_size / 1024 / 1024:.2f}MB")
+        if total_audio_size > 15 * 1024 * 1024:
+            errors.append(f"音频总大小限制15MB，当前{total_audio_size / 1024 / 1024:.2f}MB")
+        if total_video_audio_duration > 15:
+            errors.append(f"音频+视频总时长不超过15秒，当前{total_video_audio_duration:.2f}秒")
+        if audio_count > 0 and image_count == 0 and video_count == 0:
+            errors.append("音频文件需要配合图片或视频使用")
+
+        return errors
+
     async def _download_files(self, files_url: list[str]) -> tuple[list[str] | None, str | None]:
         if not files_url:
             return [], None
@@ -125,6 +238,10 @@ class ApiService:
         files, download_error = await self._download_files(req.files_url)
         if download_error:
             errors.append(download_error)
+
+        file_errors = self._validate_video_files(files or [])
+        if file_errors:
+            errors.extend(file_errors)
 
         if errors:
             return Result(code=400, success=False, message="; ".join(errors), data=None)
