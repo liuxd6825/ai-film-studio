@@ -521,7 +521,7 @@ export const AudioNode = memo(function AudioNode({
 
         <div
           ref={resultRef}
-          className="h-24 p-3 cursor-pointer"
+          className="h-24 p-1.5 cursor-pointer"
           onClick={() => setShowFloatingPanel(true)}
         >
           {data.audioUrl ? (
