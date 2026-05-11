@@ -216,6 +216,38 @@ class ApiService:
 
         return errors
 
+    def _validate_images_files(self, files: list[str]) -> list[str]:
+        errors = []
+        if not files:
+            return errors
+
+        valid_exts = {".jpg", ".jpeg", ".png"}
+
+        for filepath in files:
+            if not os.path.isfile(filepath):
+                errors.append(f"文件不存在:{filepath}")
+                continue
+
+            ext = os.path.splitext(filepath.lower())[1]
+            if ext not in valid_exts:
+                errors.append(f"图片格式仅支持JPEG、PNG:{os.path.basename(filepath)}")
+                continue
+
+            size = os.path.getsize(filepath)
+            if size > 15 * 1024 * 1024:
+                errors.append(f"图片大小不能超过15MB:{os.path.basename(filepath)}")
+
+            resolution = self._get_image_resolution(filepath)
+            if resolution:
+                errors.extend(self._validate_resolution(*resolution, os.path.basename(filepath)))
+            else:
+                errors.append(f"图片无法读取分辨率:{os.path.basename(filepath)}")
+
+        if len(files) > 6:
+            errors.append(f"图片最多上传6张，当前上传{len(files)}张")
+
+        return errors
+
     async def _download_files(self, files_url: list[str]) -> tuple[list[str] | None, str | None]:
         if not files_url:
             return [], None
@@ -277,6 +309,10 @@ class ApiService:
         files, download_error = await self._download_files(req.files_url)
         if download_error:
             errors.append(download_error)
+
+        file_errors = self._validate_images_files(files or [])
+        if file_errors:
+            errors.extend(file_errors)
 
         if errors:
             return Result(code=400, success=False, message="; ".join(errors), data=None)
