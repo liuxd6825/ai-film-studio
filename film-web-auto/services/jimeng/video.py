@@ -54,7 +54,22 @@ class VideoGenerationService(BaseService):
             flag = 0
             while not await jimeng.mode_control_found():
                 if flag > 3:
-                    break
+                    data = {
+                        "id": request_id + "_error",
+                        "request_id": request_id,
+                        "workspace": workspace,
+                        "data_id": "",
+                        "type": "video",
+                        "system": "jimeng",
+                        "status": "failed",
+                        "desc": "没有找到工具模式组件",
+                    }
+                    try:
+                        await task_service.create_task(data)
+                        await session.commit()
+                    except Exception:
+                        await session.rollback()
+                    return {"success": False, "status": "Failed", "result": "没有找到工具模式组件"}
                 flag += 1
                 await self._load_page(request_id, workspace, jimeng, task_service, session)
 
