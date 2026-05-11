@@ -74,6 +74,17 @@ class JimengPage(BasePage):
                 return text.strip()
         return ""
 
+    async def mode_control_found(self) -> bool:
+        mode_select = self.page.get_by_role("combobox").filter(has_text="Agent 模式").first
+        flag = 0
+        while True:
+            if await mode_select.count() > 0:
+                return True
+            if flag > 5:
+                return False
+            flag += 1
+            await self.page.wait_for_timeout(1000)
+
     async def _click_login_button(self):
         login_btn = self.page.locator("#SiderMenuLogin > div > div")
         if await login_btn.count() > 0:
