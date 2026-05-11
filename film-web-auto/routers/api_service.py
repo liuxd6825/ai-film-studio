@@ -148,11 +148,11 @@ class ApiService:
         max_side = max(width, height)
 
         if width > 4096 or height > 4096:
-            errors.append(f"{filename}: 最大分辨率4096×4096")
+            errors.append(f"图片最大分辨率4096×4096")
         if min_side < 320:
-            errors.append(f"{filename}: 最短边需≥320px")
+            errors.append(f"图片最短边需≥320px")
         if max_side / min_side > 3:
-            errors.append(f"{filename}: 宽高比需在1:3~3:1之间")
+            errors.append(f"图片宽高比需在1:3~3:1之间")
 
         return errors
 
@@ -182,18 +182,22 @@ class ApiService:
             if ext in image_exts:
                 image_count += 1
                 if size > 30 * 1024 * 1024:
-                    errors.append(f"图片文件大小不能超过30MB:{os.path.basename(filepath)}")
+                    errors.append(f"图片文件大小不能超过30MB")
                 resolution_errors = self._validate_resolution(*resolution, os.path.basename(filepath)) if (resolution := self._get_image_resolution(filepath)) else ["图片无法读取分辨率"]
                 errors.extend(resolution_errors)
             elif ext in video_exts:
                 video_count += 1
                 total_video_size += size
                 duration = self._get_video_duration(filepath)
+                if duration > 0 and duration < 2:
+                    errors.append(f"视频时长不能少于2秒")
                 total_video_audio_duration += duration
             elif ext in audio_exts:
                 audio_count += 1
                 total_audio_size += size
                 duration = self._get_audio_duration(filepath)
+                if duration > 0 and duration < 2:
+                    errors.append(f"音频时长不能少于2秒")
                 total_video_audio_duration += duration
 
         if image_count > 9:
@@ -230,18 +234,18 @@ class ApiService:
 
             ext = os.path.splitext(filepath.lower())[1]
             if ext not in valid_exts:
-                errors.append(f"图片格式仅支持JPEG、PNG:{os.path.basename(filepath)}")
+                errors.append(f"图片格式仅支持JPEG、PNG")
                 continue
 
             size = os.path.getsize(filepath)
             if size > 15 * 1024 * 1024:
-                errors.append(f"图片大小不能超过15MB:{os.path.basename(filepath)}")
+                errors.append(f"图片大小不能超过15MB")
 
             resolution = self._get_image_resolution(filepath)
             if resolution:
                 errors.extend(self._validate_resolution(*resolution, os.path.basename(filepath)))
             else:
-                errors.append(f"图片无法读取分辨率:{os.path.basename(filepath)}")
+                errors.append(f"图片无法读取分辨率")
 
         if len(files) > 6:
             errors.append(f"图片最多上传6张，当前上传{len(files)}张")
