@@ -6,12 +6,12 @@ import (
 	"open-film-service/internal/service/audio"
 )
 
-type AudioHandler struct {
+type SimpleAudioHandler struct {
 	svc *audio.Service
 }
 
-func NewAudioHandler(svc *audio.Service) *AudioHandler {
-	return &AudioHandler{svc: svc}
+func NewSimpleAudioHandler(svc *audio.Service) *SimpleAudioHandler {
+	return &SimpleAudioHandler{svc: svc}
 }
 
 type SynthesizeRequest struct {
@@ -19,7 +19,7 @@ type SynthesizeRequest struct {
 	Voice string `json:"voice"`
 }
 
-func (h *AudioHandler) Synthesize(ctx iris.Context) {
+func (h *SimpleAudioHandler) Synthesize(ctx iris.Context) {
 	req, ok := validator.ParseAndValidate[SynthesizeRequest](ctx)
 	if !ok {
 		return

@@ -192,7 +192,7 @@ func (s *Service) GetVideoPrompt(ctx context.Context, opts aioptions.ChatRequest
 		return nil, err
 	}
 
-	content := strings.Replace(totalResult.Content, "【整片情绪基调】", videoResult.Content+"【整片情绪基调】", 1)
+	content := strings.Replace(totalResult.Content, "【整片情绪基调】", videoResult.Content+"\n【整片情绪基调】\n", 1)
 	result := &aioptions.ChatResult{
 		Content: "无文字、无背景音乐、无字幕\n" + content,
 	}

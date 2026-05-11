@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"open-film-service/internal/ai/aioptions"
 	"open-film-service/internal/pkg/validator"
 	"open-film-service/internal/service/ai_audio"
@@ -15,7 +16,7 @@ type AIAudioHandler struct {
 	taskSvc  *canvasTaskSvc.Service
 }
 
-func NewAudioHandler(svc *ai_audio.Service, taskSvc *canvasTaskSvc.Service) *AIAudioHandler {
+func NewAIAudioHandler(svc *ai_audio.Service, taskSvc *canvasTaskSvc.Service) *AIAudioHandler {
 	return &AIAudioHandler{audioSvc: svc, taskSvc: taskSvc}
 }
 
@@ -86,12 +87,12 @@ func (h *AIAudioHandler) Generate(ctx iris.Context) {
 func (h *AIAudioHandler) GetTask(ctx iris.Context) {
 	projectID := ctx.Params().GetString("projectId")
 	if projectID == "" {
-		validator.InternalServerError(ctx, iris.NewError("projectID is required"))
+		validator.InternalServerError(ctx, errors.New("projectID is required"))
 		return
 	}
 	taskId := ctx.Params().GetString("taskId")
 	if taskId == "" {
-		validator.InternalServerError(ctx, iris.NewError("taskId is required"))
+		validator.InternalServerError(ctx, errors.New("taskId is required"))
 		return
 	}
 

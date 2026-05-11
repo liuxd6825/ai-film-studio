@@ -12,8 +12,15 @@ export const CANVAS_NODE_TYPES = {
   audio: "audioNode",
 } as const;
 
+export const CANVAS_CONTAINER_TYPES = {
+  character: "characterContainer",
+  scene: "sceneContainer",
+  prop: "propContainer",
+} as const;
+
 export type CanvasNodeType =
-  (typeof CANVAS_NODE_TYPES)[keyof typeof CANVAS_NODE_TYPES];
+  | (typeof CANVAS_NODE_TYPES)[keyof typeof CANVAS_NODE_TYPES]
+  | (typeof CANVAS_CONTAINER_TYPES)[keyof typeof CANVAS_CONTAINER_TYPES];
 
 export const DEFAULT_ASPECT_RATIO = "1:1";
 export const AUTO_REQUEST_ASPECT_RATIO = "auto";
@@ -255,6 +262,32 @@ export interface AudioNodeData extends NodeDisplayData {
   fileSize?: number;
 }
 
+export type ContainerType = keyof typeof CANVAS_CONTAINER_TYPES;
+
+export interface BaseContainerNodeData extends NodeDisplayData {
+  containerType: ContainerType;
+  childNodeIds: string[];
+  collapsed: boolean;
+  label: string;
+}
+
+export interface CharacterContainerNodeData extends BaseContainerNodeData {
+  containerType: "character";
+}
+
+export interface SceneContainerNodeData extends BaseContainerNodeData {
+  containerType: "scene";
+}
+
+export interface PropContainerNodeData extends BaseContainerNodeData {
+  containerType: "prop";
+}
+
+export type ContainerNodeData =
+  | CharacterContainerNodeData
+  | SceneContainerNodeData
+  | PropContainerNodeData;
+
 export type CanvasNodeData =
   | UploadImageNodeData
   | ExportImageNodeData
@@ -266,7 +299,8 @@ export type CanvasNodeData =
   | VideoGenNodeData
   | VideoUploadNodeData
   | TextNodeData
-  | AudioNodeData;
+  | AudioNodeData
+  | ContainerNodeData;
 
 export interface CanvasNode {
   id: string;
@@ -385,6 +419,17 @@ export function isAudioNode(
   node: CanvasNode | null | undefined,
 ): node is CanvasNode & { data: AudioNodeData } {
   return node?.type === CANVAS_NODE_TYPES.audio;
+}
+
+export function isContainerNode(
+  node: CanvasNode | null | undefined,
+): node is CanvasNode & { data: ContainerNodeData } {
+  if (!node) return false;
+  return (
+    node.type === CANVAS_CONTAINER_TYPES.character ||
+    node.type === CANVAS_CONTAINER_TYPES.scene ||
+    node.type === CANVAS_CONTAINER_TYPES.prop
+  );
 }
 
 export function nodeHasVideo(node: CanvasNode | null | undefined): boolean {

@@ -329,7 +329,6 @@ export const TextNode = memo(function TextNode({
     setTaskProgress(0);
 
     try {
-      debugger
       setTaskStatus("processing");
       const result = await llmApi.generate(projectId, {
         canvasId: canvasId || "",

@@ -13,26 +13,26 @@ export function TextContentModal() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isComposingRef = useRef(false);
 
+  const handleSave = useCallback(() => {
+    const newContent = textareaRef.current?.value || "";
+    if (contentEditor.nodeId) {
+      updateNodeData(contentEditor.nodeId, { content: newContent });
+    }
+    closeContentEditor();
+  }, [contentEditor.nodeId, updateNodeData, closeContentEditor]);
+
   const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      e.stopPropagation();
       if (e.key === "Escape") {
         closeContentEditor();
       } else if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        const newContent = textareaRef.current?.value || "";
-        if (contentEditor.nodeId) {
-          updateNodeData(contentEditor.nodeId, { content: newContent });
-        }
-        closeContentEditor();
+        handleSave();
       }
     },
-    [closeContentEditor, contentEditor.nodeId, updateNodeData],
+    [closeContentEditor, handleSave],
   );
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -49,14 +49,6 @@ export function TextContentModal() {
     [closeContentEditor],
   );
 
-  const handleSave = useCallback(() => {
-    const newContent = textareaRef.current?.value || "";
-    if (contentEditor.nodeId) {
-      updateNodeData(contentEditor.nodeId, { content: newContent });
-    }
-    closeContentEditor();
-  }, [contentEditor.nodeId, updateNodeData, closeContentEditor]);
-
   const handleCompositionStart = useCallback(() => {
     isComposingRef.current = true;
   }, []);
@@ -64,8 +56,11 @@ export function TextContentModal() {
   const handleCompositionEnd = useCallback(
     (_e: React.CompositionEvent<HTMLTextAreaElement>) => {
       isComposingRef.current = false;
+      if (textareaRef.current) {
+        updateContentEditorContent(textareaRef.current.value);
+      }
     },
-    [],
+    [updateContentEditorContent],
   );
 
   const handleChange = useCallback(
@@ -101,7 +96,8 @@ export function TextContentModal() {
 
         <textarea
           ref={textareaRef}
-          value={contentEditor.content}
+          defaultValue={contentEditor.content}
+          onKeyDown={handleKeyDown}
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
           onChange={handleChange}

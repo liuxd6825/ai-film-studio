@@ -1,5 +1,6 @@
 import {
   CANVAS_NODE_TYPES,
+  CANVAS_CONTAINER_TYPES,
   DEFAULT_ASPECT_RATIO,
   type ImageSize,
   type CanvasNodeData,
@@ -15,9 +16,11 @@ import {
   type VideoUploadNodeData,
   type TextNodeData,
   type AudioNodeData,
+  type ContainerType,
+  type ContainerNodeData,
 } from "./canvasNodes";
 
-export type MenuIconKey = "upload" | "sparkles" | "layout" | "text";
+export type MenuIconKey = "upload" | "sparkles" | "layout" | "text" | "users" | "mountain" | "box";
 
 export interface CanvasNodeCapabilities {
   toolbar: boolean;
@@ -374,24 +377,56 @@ const audioNodeDefinition: CanvasNodeDefinition<AudioNodeData> = {
   }),
 };
 
+function createContainerNodeDefinition(
+  containerType: ContainerType,
+  menuIcon: MenuIconKey,
+): CanvasNodeDefinition<ContainerNodeData> {
+  const type = CANVAS_CONTAINER_TYPES[containerType];
+  return {
+    type,
+    menuLabelKey: `node.menu.${containerType}Container`,
+    menuIcon,
+    visibleInMenu: true,
+    capabilities: {
+      toolbar: false,
+      promptInput: false,
+    },
+    connectivity: {
+      sourceHandle: true,
+      targetHandle: true,
+      connectMenu: {
+        fromSource: true,
+        fromTarget: true,
+      },
+    },
+    createDefaultData: () => ({
+      displayName: "",
+      containerType,
+      childNodeIds: [],
+      collapsed: false,
+      label: "",
+    }),
+  };
+}
+
 export const canvasNodeDefinitions: Record<
   CanvasNodeType,
   CanvasNodeDefinition
 > = {
   [CANVAS_NODE_TYPES.text]: textNodeDefinition,
-  [CANVAS_NODE_TYPES.audio]: audioNodeDefinition,
   [CANVAS_NODE_TYPES.upload]: uploadNodeDefinition,
   [CANVAS_NODE_TYPES.videoUpload]: videoUploadNodeDefinition,
   [CANVAS_NODE_TYPES.imageEdit]: imageEditNodeDefinition,
   [CANVAS_NODE_TYPES.videoGen]: videoGenNodeDefinition,
+  [CANVAS_NODE_TYPES.audio]: audioNodeDefinition,
   [CANVAS_NODE_TYPES.exportImage]: exportImageNodeDefinition,
   [CANVAS_NODE_TYPES.textAnnotation]: textAnnotationNodeDefinition,
   [CANVAS_NODE_TYPES.group]: groupNodeDefinition,
   [CANVAS_NODE_TYPES.storyboardSplit]: storyboardSplitDefinition,
   [CANVAS_NODE_TYPES.storyboardGen]: storyboardGenNodeDefinition,
-
-
-
+  [CANVAS_CONTAINER_TYPES.character]: createContainerNodeDefinition("character", "users"),
+  [CANVAS_CONTAINER_TYPES.scene]: createContainerNodeDefinition("scene", "mountain"),
+  [CANVAS_CONTAINER_TYPES.prop]: createContainerNodeDefinition("prop", "box"),
 };
 
 export function getNodeDefinition(type: CanvasNodeType): CanvasNodeDefinition {

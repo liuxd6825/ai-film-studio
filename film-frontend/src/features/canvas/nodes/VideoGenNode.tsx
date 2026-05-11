@@ -8,9 +8,12 @@ import {
   isUploadNode,
   isExportImageNode,
   isImageEditNode,
+  isAudioNode,
+  isVideoGenNode,
   IMAGE_ASPECT_RATIOS,
   CANVAS_NODE_TYPES,
   TextNodeData,
+  AudioNodeData,
 } from "../domain/canvasNodes";
 import { useCanvasStore } from "../stores/canvasStore";
 import { videoApi, type GenerateVideoRequest, type VideoAiModel } from "../../../api/videoApi";
@@ -101,12 +104,14 @@ const pulseGlowStyles = `
 }
 `;
 
-interface IncomingImage {
+interface IncomingMedia {
   id: string;
-  imageUrl: string;
-  previewImageUrl?: string | null;
+  type: 'image' | 'audio' | 'video';
+  url: string;
+  previewUrl?: string | null;
   label: string;
   sourceNodeId: string;
+  prompt?: string;
 }
 
 export const VideoGenNode = memo(function VideoGenNode({
@@ -122,6 +127,8 @@ export const VideoGenNode = memo(function VideoGenNode({
   
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const openVideoViewer = useCanvasStore((s) => s.openVideoViewer);
+  const openImageViewer = useCanvasStore((s) => s.openImageViewer);
+  const openAudioPlayer = useCanvasStore((s) => s.openAudioPlayer);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
   const openTextNodeOrderModal = useCanvasStore((s) => s.openTextNodeOrderModal);
   const openKeyframeModal = useCanvasStore((s) => s.openKeyframeModal);
@@ -135,6 +142,7 @@ export const VideoGenNode = memo(function VideoGenNode({
   const [taskProgress, setTaskProgress] = useState(data.taskProgress || 0);
 
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [hoveredMediaId, setHoveredMediaId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputRefForPrompt = useRef<HTMLInputElement>(null);
 
@@ -257,13 +265,13 @@ export const VideoGenNode = memo(function VideoGenNode({
     }
   }, [data.taskId, data.taskStatus, data.taskProgress, projectId, id, updateNodeData]);
 
-  const incomingImages: IncomingImage[] = useMemo(() => {
+  const incomingMedias: IncomingMedia[] = useMemo(() => {
     const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
     const sourceNodeIds = edges
       .filter((e) => e.target === id)
       .map((e) => ({ edgeId: e.id, sourceId: e.source }));
 
-    const images: IncomingImage[] = [];
+    const medias: IncomingMedia[] = [];
     for (const { edgeId, sourceId } of sourceNodeIds) {
       const sourceNode = nodeById.get(sourceId);
       if (!sourceNode) continue;
@@ -271,33 +279,67 @@ export const VideoGenNode = memo(function VideoGenNode({
       if (
         !isUploadNode(sourceNode) &&
         !isExportImageNode(sourceNode) &&
-        !isImageEditNode(sourceNode)
+        !isImageEditNode(sourceNode) &&
+        !isAudioNode(sourceNode) &&
+        !isVideoGenNode(sourceNode)
       ) {
         continue;
       }
 
-      const imageUrl = (sourceNode.data as { imageUrl?: string }).imageUrl;
-      if (!imageUrl) continue;
+      if (isAudioNode(sourceNode)) {
+        const audioData = sourceNode.data as AudioNodeData;
+        const audioUrl = audioData.audioUrl;
+        if (!audioUrl) continue;
 
-      const previewImageUrl = (
-        sourceNode.data as { previewImageUrl?: string | null }
-      ).previewImageUrl;
-      const displayName = (sourceNode.data as { displayName?: string })
-        .displayName;
+        const displayName = audioData.displayName;
+        medias.push({
+          id: edgeId,
+          type: 'audio',
+          url: audioUrl,
+          previewUrl: audioData.previewAudioUrl ?? null,
+          label: displayName || `音频${medias.length + 1}`,
+          sourceNodeId: sourceId,
+          prompt: audioData.prompt,
+        });
+      } else if (isVideoGenNode(sourceNode)) {
+        const videoData = sourceNode.data as VideoGenNodeData;
+        const videoUrl = videoData.videoUrl;
+        if (!videoUrl) continue;
 
-      images.push({
-        id: edgeId,
-        imageUrl,
-        previewImageUrl: previewImageUrl ?? null,
-        label: displayName || `图${images.length + 1}`,
-        sourceNodeId: sourceId,
-      });
+        const displayName = videoData.displayName;
+        medias.push({
+          id: edgeId,
+          type: 'video',
+          url: videoUrl,
+          previewUrl: videoData.previewVideoUrl ?? null,
+          label: displayName || `视频${medias.length + 1}`,
+          sourceNodeId: sourceId,
+        });
+      } else {
+        const imageUrl = (sourceNode.data as { imageUrl?: string }).imageUrl;
+        if (!imageUrl) continue;
+
+        const previewImageUrl = (
+          sourceNode.data as { previewImageUrl?: string | null }
+        ).previewImageUrl;
+        const displayName = (sourceNode.data as { displayName?: string })
+          .displayName;
+
+        medias.push({
+          id: edgeId,
+          type: 'image',
+          url: imageUrl,
+          previewUrl: previewImageUrl ?? null,
+          label: displayName || `图${medias.length + 1}`,
+          sourceNodeId: sourceId,
+        });
+      }
     }
 
-    return images;
+    return medias;
   }, [edges, id, nodes, updateNodeData]);
 
-  const handleRemoveImage = useCallback(
+  const handleRemoveMedia = useCallback(
     (edgeId: string) => {
       deleteEdge(edgeId);
     },
@@ -418,13 +460,6 @@ export const VideoGenNode = memo(function VideoGenNode({
       }
     },
     [handleFileForPromptMode],
-  );
-
-  const handlePreviewImage = useCallback(
-    (imageUrl: string) => {
-      openVideoViewer(imageUrl);
-    },
-    [openVideoViewer],
   );
 
   const handleCompositionStart = useCallback(() => {
@@ -586,22 +621,41 @@ export const VideoGenNode = memo(function VideoGenNode({
     return contents;
   }, [edges, id, nodes]);
 
-  const getReferenceImageDescriptions = useCallback(() => {
+  const getConnectedAudioNodePrompts = useCallback(() => {
+    const prompts: string[] = [];
+    for (const media of incomingMedias) {
+      if (media.type === 'audio' && media.prompt?.trim()) {
+        prompts.push(media.prompt.trim());
+      }
+    }
+    return prompts;
+  }, [incomingMedias]);
+
+  const getReferenceDescriptions = useCallback(() => {
     const descriptions: string[] = [];
     let imageIndex = 0;
-    for (const img of incomingImages) {
-      if (img.label?.trim()) {
+    let fileIndex = 0;
+    for (const media of incomingMedias) {
+      if (!media.label?.trim()) continue;
+      if (media.type === 'image') {
         imageIndex++;
-        descriptions.push(`参考图${imageIndex}是${img.label.trim()}`);
+        descriptions.push(`参考图${imageIndex}是${media.label.trim()}。`);
+      } else if (media.type === 'audio') {
+        fileIndex++;
+        descriptions.push(`参考文件${fileIndex + imageIndex}是${media.label.trim()}的声音。`);
+      } else if (media.type === 'video') {
+        fileIndex++;
+        descriptions.push(`参考文件${fileIndex + imageIndex}是${media.label.trim()}的视频。`);
       }
     }
     return descriptions;
-  }, [incomingImages]);
+  }, [incomingMedias]);
 
   const handleGenerate = useCallback(async () => {
     const textNodeContents = getConnectedTextNodeContents();
-    const referenceDescriptions = getReferenceImageDescriptions();
-    const mergedPrompt = [...referenceDescriptions, ...textNodeContents, data.prompt]
+    const audioPrompts = getConnectedAudioNodePrompts();
+    const referenceDescriptions = getReferenceDescriptions();
+    const mergedPrompt = [...referenceDescriptions, ...audioPrompts, ...textNodeContents, data.prompt]
       .filter(Boolean)
       .join("\n");
 
@@ -636,8 +690,8 @@ export const VideoGenNode = memo(function VideoGenNode({
         duration: data.duration,
       };
 
-      if (incomingImages.length > 0) {
-        requestData.reference_files = incomingImages.map((img) => img.imageUrl);
+      if (incomingMedias.length > 0) {
+        requestData.reference_files = incomingMedias.map((m) => m.url);
       }
 
       const response = await videoApi.generateVideo(
@@ -694,11 +748,12 @@ export const VideoGenNode = memo(function VideoGenNode({
     id,
     edges,
     nodes,
-    incomingImages,
+    incomingMedias,
     updateNodeData,
     startPolling,
     getConnectedTextNodeContents,
-    getReferenceImageDescriptions,
+    getConnectedAudioNodePrompts,
+    getReferenceDescriptions,
   ]);
 
   const handleCancel = useCallback(async () => {
@@ -1016,23 +1071,64 @@ export const VideoGenNode = memo(function VideoGenNode({
                 <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               </button>
               <div className="p-1.5">
-                {incomingImages.length > 0 ? (
+                {incomingMedias.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {incomingImages.map((img, index) => (
-                      <div key={`${img.id}-${index}`} className="relative group">
-                        <img
-                          src={img.previewImageUrl || img.imageUrl}
-                          alt={img.label}
-                          className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600 cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
-                          onClick={() => handlePreviewImage(img.imageUrl)}
-                        />
-                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center z-10">
-                          {index + 1}
-                        </div>
+                    {incomingMedias.map((media, index) => (
+                      <div
+                        key={`${media.id}-${index}`}
+                        className="relative"
+                        onMouseEnter={() => setHoveredMediaId(media.id)}
+                        onMouseLeave={() => setHoveredMediaId(null)}
+                        onDoubleClick={() => {
+                          if (media.type === 'image') {
+                            openImageViewer(media.url);
+                          } else if (media.type === 'audio') {
+                            openAudioPlayer(media.url, media.label);
+                          } else if (media.type === 'video') {
+                            openVideoViewer(media.url);
+                          }
+                        }}
+                      >
+                        {media.type === 'audio' ? (
+                          <div className="contents">
+                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-100 dark:from-purple-900/40 to-blue-100 dark:to-blue-900/40 border border-gray-200 dark:border-gray-600 flex items-center justify-center">
+                              <span className="text-[10px] text-purple-600 dark:text-purple-400 truncate px-1">
+                                {media.label}
+                              </span>
+                            </div>
+                            <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center z-10">
+                              {index + 1}
+                            </div>
+                          </div>
+                        ) : media.type === 'video' ? (
+                          <div className="contents">
+                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-100 dark:from-green-900/40 to-blue-100 dark:to-blue-900/40 border border-gray-200 dark:border-gray-600 flex items-center justify-center">
+                              <span className="text-[10px] text-green-600 dark:text-green-400 truncate px-1">
+                                {media.label}
+                              </span>
+                            </div>
+                            <div className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center z-10">
+                              {index + 1}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="contents">
+                            <img
+                              src={media.previewUrl || media.url}
+                              alt={media.label}
+                              className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600 cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                              onClick={() => openImageViewer(media.url)}
+                            />
+                            <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center z-10">
+                              {index + 1}
+                            </div>
+                          </div>
+                        )}
                         <button
                           type="button"
-                          onClick={() => handleRemoveImage(img.id)}
-                          className="absolute -top-1 -left-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                          onClick={() => handleRemoveMedia(media.id)}
+                          className="absolute -top-1 -left-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center transition-opacity z-20 p-2"
+                          style={{ opacity: hoveredMediaId === media.id ? 1 : 0 }}
                           title="断开连接"
                         >
                           ×
@@ -1042,7 +1138,7 @@ export const VideoGenNode = memo(function VideoGenNode({
                   </div>
                 ) : (
                   <div className="h-12 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-400 dark:text-gray-500 text-xs">
-                    暂无参考图片（拖拽连接上游节点）
+                    暂无参考文件（拖拽连接上游节点）
                   </div>
                 )}
               </div>

@@ -98,8 +98,6 @@ export function NodeSelectionMenu({
 
   const getLabel = (def: { menuLabelKey: string }) => {
     const labels: Record<string, string> = {
-     // "node.menu.uploadImage": "导入图片",
-     // "node.menu.videoUpload": "导入视频",
       "node.menu.text": "文本",
       "node.menu.aiImageGeneration": "图片",
       "node.menu.videoGen": "视频",
