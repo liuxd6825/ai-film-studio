@@ -156,7 +156,7 @@ function ImageEditorModalComponent({
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div
-        className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 w-[800px] flex flex-col shadow-xl max-h-[90vh] pointer-events-auto"
+        className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 w-[800px] flex flex-col shadow-xl max-h-[600px] pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
