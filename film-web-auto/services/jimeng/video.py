@@ -8,6 +8,29 @@ import os
 
 
 class VideoGenerationService(BaseService):
+
+    async def _load_page(self, request_id: str, workspace: str, jimeng: JimengPage, task_service: TaskService, session: AsyncSession):
+        if not await jimeng.wait_for_login_v2():
+            data = {
+                "id": request_id + "_error",
+                "request_id": request_id,
+                "workspace": workspace,
+                "data_id": "",
+                "type": "video",
+                "system": "jimeng",
+                "status": "failed",
+                "desc": "Login timeout",
+            }
+            try:
+                await task_service.create_task(data)
+                await session.commit()
+            except Exception:
+                await session.rollback()
+            return {"success": False, "status": "Failed", "result": "Login timeout"}
+
+        await jimeng.navigate()
+        await jimeng.close_modal_dialog()
+
     async def generate(
         self,
         session: AsyncSession,
@@ -26,27 +49,14 @@ class VideoGenerationService(BaseService):
         try:
             jimeng = JimengPage(page = None, workspace=workspace, type="video")
             
-            if not await jimeng.wait_for_login_v2():
-                data = {
-                    "id": request_id + "_error",
-                    "request_id": request_id,
-                    "workspace": workspace,
-                    "data_id": "",
-                    "type": "video",
-                    "system": "jimeng",
-                    "status": "failed",
-                    "desc": "Login timeout",
-                }
-                try:
-                    await task_service.create_task(data)
-                    await session.commit()
-                except Exception:
-                    await session.rollback()
-                return {"success": False, "status":"Failed", "result": "Login timeout"}
+            await self._load_page(request_id, workspace, jimeng, task_service, session)
 
-            await jimeng.navigate()
-
-            await jimeng.close_modal_dialog()
+            flag = 0
+            while not await jimeng.mode_control_found():
+                if flag > 3:
+                    break
+                flag += 1
+                await self._load_page(request_id, workspace, jimeng, task_service, session)
 
             # await jimeng.select_generation_mode("视频生成")
             await jimeng.select_reference_type(work_type)
