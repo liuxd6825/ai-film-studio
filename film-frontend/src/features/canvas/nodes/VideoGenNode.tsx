@@ -136,6 +136,7 @@ export const VideoGenNode = memo(function VideoGenNode({
 
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefForPrompt = useRef<HTMLInputElement>(null);
 
   const effectiveMode = data.mode || 'prompt';
 
@@ -333,6 +334,35 @@ export const VideoGenNode = memo(function VideoGenNode({
     [id, projectId, canvasId, updateNodeData],
   );
 
+  const handleFileForPromptMode = useCallback(
+    async (file: File) => {
+      if (!file.type.startsWith("video/")) return;
+
+      if (!projectId || !canvasId) {
+        console.error("Missing projectId or canvasId");
+        return;
+      }
+      try {
+        const response = await canvasFileApi.upload(
+          projectId,
+          canvasId,
+          id,
+          file,
+        );
+        updateNodeData(id, {
+          videoUrl: response.downloadUrl,
+          previewVideoUrl: response.downloadUrl,
+          sourceFileName: file.name,
+          sourceType: 'upload',
+          mode: 'prompt',
+        });
+      } catch (error) {
+        console.error("Failed to upload file:", error);
+      }
+    },
+    [id, projectId, canvasId, updateNodeData],
+  );
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -378,6 +408,16 @@ export const VideoGenNode = memo(function VideoGenNode({
       }
     },
     [handleFile],
+  );
+
+  const handleFileInputForPrompt = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleFileForPromptMode(files[0]);
+      }
+    },
+    [handleFileForPromptMode],
   );
 
   const handlePreviewImage = useCallback(
@@ -446,6 +486,7 @@ export const VideoGenNode = memo(function VideoGenNode({
               videoUrl: result.resultUrl,
               previewVideoUrl: result.resultUrl,
               taskStatus: "completed",
+              mode: "prompt",
               taskProgress: 100,
             });
             clearInterval(pollingIntervalRef.current!);
@@ -545,9 +586,22 @@ export const VideoGenNode = memo(function VideoGenNode({
     return contents;
   }, [edges, id, nodes]);
 
+  const getReferenceImageDescriptions = useCallback(() => {
+    const descriptions: string[] = [];
+    let imageIndex = 0;
+    for (const img of incomingImages) {
+      if (img.label?.trim()) {
+        imageIndex++;
+        descriptions.push(`参考图${imageIndex}是${img.label.trim()}`);
+      }
+    }
+    return descriptions;
+  }, [incomingImages]);
+
   const handleGenerate = useCallback(async () => {
     const textNodeContents = getConnectedTextNodeContents();
-    const mergedPrompt = [...textNodeContents, data.prompt]
+    const referenceDescriptions = getReferenceImageDescriptions();
+    const mergedPrompt = [...referenceDescriptions, ...textNodeContents, data.prompt]
       .filter(Boolean)
       .join("\n");
 
@@ -595,21 +649,21 @@ export const VideoGenNode = memo(function VideoGenNode({
         projectId,
         canvasId,
         nodeId: id,
-        hasRequestId: !!response.task_id,
-        requestId: response.task_id,
+        hasRequestId: !!response.id,
+        requestId: response.id,
       });
 
-      if (response.task_id) {
+      if (response.id) {
         setTaskStatus("processing");
         updateNodeData(id, {
-          taskId: response.task_id,
+          taskId: response.id,
           taskStatus: "processing",
         });
-        startPolling(response.task_id);
-      } else if (response.result_url) {
+        startPolling(response.id);
+      } else if (response.resultUrl) {
         updateNodeData(id, {
-          videoUrl: response.result_url,
-          previewVideoUrl: response.result_url,
+          videoUrl: response.resultUrl,
+          previewVideoUrl: response.resultUrl,
         });
 
         setTaskStatus("processing");
@@ -644,6 +698,7 @@ export const VideoGenNode = memo(function VideoGenNode({
     updateNodeData,
     startPolling,
     getConnectedTextNodeContents,
+    getReferenceImageDescriptions,
   ]);
 
   const handleCancel = useCallback(async () => {
@@ -749,6 +804,13 @@ export const VideoGenNode = memo(function VideoGenNode({
         className="hidden"
         onChange={handleFileInput}
       />
+      <input
+        ref={fileInputRefForPrompt}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={handleFileInputForPrompt}
+      />
       <NodeToolbar nodeId={id} visible={selected}>
         {effectiveMode === 'undecided' && (
           <button
@@ -777,17 +839,30 @@ export const VideoGenNode = memo(function VideoGenNode({
           </button>
         )}
         {effectiveMode === 'prompt' && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowVideoSelector(true);
-            }}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-            title="选择"
-          >
-            <Image className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRefForPrompt.current?.click();
+              }}
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              title="上传"
+            >
+              <Upload className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowVideoSelector(true);
+              }}
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              title="选择"
+            >
+              <Image className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            </button>
+          </>
         )}
         <button
           type="button"

@@ -9,6 +9,7 @@ export const CANVAS_NODE_TYPES = {
   videoGen: "videoGenNode",
   videoUpload: "videoUploadNode",
   text: "textNode",
+  audio: "audioNode",
 } as const;
 
 export type CanvasNodeType =
@@ -229,6 +230,31 @@ export interface TextNodeData extends NodeDisplayData {
   height?: number;
 }
 
+export type AudioTaskStatus =
+  | "idle"
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "unknown";
+
+export interface AudioNodeData extends NodeDisplayData {
+  content: string;
+  prompt: string;
+  audioUrl?: string | null;
+  previewAudioUrl?: string | null;
+  sourceFileName?: string | null;
+  voice?: string;
+  aiModel?: string;
+  mode: 'prompt' | 'upload';
+  taskStatus: AudioTaskStatus;
+  taskProgress: number;
+  taskId?: string;
+  errorMessage?: string;
+  fileSize?: number;
+}
+
 export type CanvasNodeData =
   | UploadImageNodeData
   | ExportImageNodeData
@@ -239,7 +265,8 @@ export type CanvasNodeData =
   | StoryboardGenNodeData
   | VideoGenNodeData
   | VideoUploadNodeData
-  | TextNodeData;
+  | TextNodeData
+  | AudioNodeData;
 
 export interface CanvasNode {
   id: string;
@@ -352,6 +379,12 @@ export function isVideoUploadNode(
   node: CanvasNode | null | undefined,
 ): node is CanvasNode & { data: VideoUploadNodeData } {
   return node?.type === CANVAS_NODE_TYPES.videoUpload;
+}
+
+export function isAudioNode(
+  node: CanvasNode | null | undefined,
+): node is CanvasNode & { data: AudioNodeData } {
+  return node?.type === CANVAS_NODE_TYPES.audio;
 }
 
 export function nodeHasVideo(node: CanvasNode | null | undefined): boolean {

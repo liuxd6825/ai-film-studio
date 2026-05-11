@@ -71,6 +71,9 @@ func NewRouter(h *Handler) *iris.Application {
 		// AI Image 生成路由
 		h.AIImageHandler.InitHandler(api)
 
+		// AI 音频生成路由
+		h.AIAudioHandler.InitHandler(api)
+
 		// AI 视频生成路由
 		api.Post("/projects/:projectId/videos/generate", h.AIVideoHandler.Generate)
 		api.Get("/projects/:projectId/videos/models", h.AIVideoHandler.GetModels)

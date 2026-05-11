@@ -25,6 +25,7 @@ import { nodeTypes } from "./nodes";
 import { NodeSelectionMenu } from "./NodeSelectionMenu";
 import { ImageViewerModal } from "./ui/ImageViewerModal";
 import { VideoViewerModal } from "./ui/VideoViewerModal";
+import { AudioPlayerModal } from "./ui/AudioPlayerModal";
 import { TextContentModal } from "./ui/TextContentModal";
 import { TextNodeOrderModal } from "./ui/TextNodeOrderModal";
 import { KeyframePanel } from "./components/KeyframePanel";
@@ -759,6 +760,8 @@ export function Canvas() {
       <ImageViewerModal />
 
       <VideoViewerModal />
+
+      <AudioPlayerModal />
 
       <TextContentModal />
 

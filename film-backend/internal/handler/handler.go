@@ -25,7 +25,7 @@ type Handler struct {
 	Skill          *SkillHandler
 	Memory         *MemoryHandler
 	Media          *MediaHandler
-	Audio          *AudioHandler
+	Audio          *SimpleAudioHandler
 	LLMHandler     *AILLMHandler
 	Video          *VideoHandler
 	Comfy          *ComfyHandler
@@ -44,6 +44,7 @@ type Handler struct {
 	Category       *CategoryHandler
 	AIImageHandler *AIImageHandler
 	AIModel        *AIModelHandler
+	AIAudioHandler *AIAudioHandler
 	AIVideoHandler *AIVideoHandler
 	CanvasFile     *CanvasFileHandler
 	CanvasTask     *CanvasTaskHandler
@@ -86,6 +87,8 @@ func NewHandler(
 	categoryHandler *CategoryHandler,
 	aiImageHandler *AIImageHandler,
 	aiModelHandler *AIModelHandler,
+	simpleAudioHandler *SimpleAudioHandler,
+	aiAudioHandler *AIAudioHandler,
 	aiVideoHandler *AIVideoHandler,
 	canvasFileHandler *CanvasFileHandler,
 	canvasTaskHandler *CanvasTaskHandler,
@@ -127,6 +130,8 @@ func NewHandler(
 		Category:       categoryHandler,
 		AIImageHandler: aiImageHandler,
 		AIModel:        aiModelHandler,
+		Audio:          simpleAudioHandler,
+		AIAudioHandler: aiAudioHandler,
 		AIVideoHandler: aiVideoHandler,
 		CanvasFile:     canvasFileHandler,
 		CanvasTask:     canvasTaskHandler,

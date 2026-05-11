@@ -73,9 +73,9 @@ export interface GenerateVideoRequest {
 }
 
 export interface GenerateVideoResponse {
-  task_id: string;
-  result_id: string;
-  result_url: string;
+  id: string;
+  resultId: string;
+  resultUrl: string;
   status: string;
 }
 

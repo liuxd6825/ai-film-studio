@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"open-film-service/internal/ai"
 	"open-film-service/internal/ai/infrastructure/agent"
+	"open-film-service/internal/service/audio"
 	"open-film-service/internal/service/ai_llm"
+	"open-film-service/internal/service/ai_audio"
 	"open-film-service/internal/service/ai_video"
 	"os"
 	"path/filepath"
@@ -238,6 +240,7 @@ func main() {
 	aiLLMService := ai.NewAiLLMService(&cfg.TextModels)
 	aiImageService := ai.NewAiImageService(&cfg.ImageModels)
 	aiVideoService := ai.NewAiVideoService(&cfg.VideoModels)
+	aiAudioService := ai.NewAiAudioService(cfg)
 
 	canvasTaskService := canvasTaskSvc.NewService(canvasTaskRepo, canvasTaskResultRepo, aiImageService, aiVideoService)
 	canvasTaskHandler := handler.NewCanvasTaskHandler(canvasTaskService, aiVideoService, aiImageService, canvasTaskResultRepo)
@@ -247,6 +250,12 @@ func main() {
 
 	videoService := ai_video.NewService(cfg, aiVideoService, canvasTaskRepo)
 	videoGenHandler := handler.NewAIVideoHandler(videoService, canvasTaskService)
+
+	oldAudioService := audio.NewService(cfg.VideoModels)
+	simpleAudioHandler := handler.NewSimpleAudioHandler(oldAudioService)
+
+	newAudioService := ai_audio.NewService(cfg, aiAudioService, canvasTaskRepo)
+	audioHandler := handler.NewAIAudioHandler(newAudioService, canvasTaskService)
 
 	imageService := ai_image.NewService(cfg, aiImageService, canvasTaskRepo)
 	imageHandler := handler.NewImageHandler(imageService, canvasTaskService)
@@ -291,6 +300,8 @@ func main() {
 		categoryHandler,
 		imageHandler,
 		aimodelHandler,
+		simpleAudioHandler,
+		audioHandler,
 		videoGenHandler,
 		canvasFileHandler,
 		canvasTaskHandler,

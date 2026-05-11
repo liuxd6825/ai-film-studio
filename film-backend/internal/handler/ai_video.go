@@ -75,7 +75,7 @@ func (h *AIVideoHandler) Generate(ctx iris.Context) {
 			Provider:  aiTask.Provider,
 			Model:     req.Model,
 			Prompt:    req.Prompt,
-			TaskType:  aioptions.TaskTypeImage,
+			TaskType:  aioptions.TaskTypeVideo,
 			Workspace: req.Workspace,
 			Params: map[string]any{
 				"promptType":  req.PromptType,
@@ -103,26 +103,6 @@ func (h *AIVideoHandler) GetTask(ctx iris.Context) {
 	}
 
 	task, err := h.videoSvc.GetTask(context.Background(), taskId)
-	if err != nil {
-		validator.InternalServerError(ctx, err)
-	} else {
-		validator.Success(ctx, task)
-	}
-}
-
-func (h *AIVideoHandler) GetTask2(ctx iris.Context) {
-	projectID := ctx.Params().GetString("projectId")
-	if projectID == "" {
-		validator.InternalServerError(ctx, errors.New("projectID is required"))
-		return
-	}
-	taskId := ctx.Params().GetString("taskId")
-	if taskId == "" {
-		validator.InternalServerError(ctx, errors.New("taskId is required"))
-		return
-	}
-
-	task, err := h.taskSvc.GetTask(taskId)
 	if err != nil {
 		validator.InternalServerError(ctx, err)
 	} else {
