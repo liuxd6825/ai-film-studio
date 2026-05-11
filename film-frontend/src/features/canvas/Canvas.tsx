@@ -30,6 +30,7 @@ import { TextContentModal } from "./ui/TextContentModal";
 import { TextNodeOrderModal } from "./ui/TextNodeOrderModal";
 import { KeyframePanel } from "./components/KeyframePanel";
 import { KeyframeModal } from "./ui/KeyframeModal";
+import { ImageEditorModal } from "./ui/ImageEditorModal";
 import { CustomEdge } from "./components/CustomEdge";
 import { useProjectStore } from "../../stores/projectStore";
 import { canvasApi } from "../../api/canvasApi";
@@ -95,6 +96,8 @@ export function Canvas() {
     keyframeModal,
     closeKeyframeModal,
     addKeyframe,
+    imageEditor,
+    closeImageEditor,
   } = useCanvasStore();
 
   const { currentProjectId } = useProjectStore();
@@ -133,6 +136,39 @@ export function Canvas() {
     },
     [keyframeModal, addKeyframe, currentProjectId, canvasIdFromUrl],
   );
+
+  const handleEditorSave = useCallback(
+    (result: { download?: boolean; imageUrl: string; saveAsNewNode?: boolean }) => {
+      if (!imageEditor.nodeId) return;
+
+      if (result.download) {
+        const link = document.createElement('a');
+        link.href = result.imageUrl;
+        link.download = 'edited_image.png';
+        link.click();
+      }
+
+      if (result.saveAsNewNode) {
+        // 创建新节点
+        useCanvasStore.getState().addDerivedImageEditNode(
+          imageEditor.nodeId,
+          result.imageUrl,
+          '1:1',
+          result.imageUrl,
+        );
+      } else {
+        // 更新节点图片
+        useCanvasStore.getState().updateNodeData(imageEditor.nodeId, {
+          imageUrl: result.imageUrl,
+          previewImageUrl: result.imageUrl,
+        });
+      }
+
+      closeImageEditor();
+    },
+    [imageEditor.nodeId, closeImageEditor],
+  );
+
   const { theme: themeMode } = useThemeStore();
   const isDark = themeMode === "dark";
 
@@ -781,6 +817,16 @@ export function Canvas() {
           duration={keyframeModal.duration}
           onClose={closeKeyframeModal}
           onExtract={handleKeyframeExtract}
+        />
+      )}
+
+      {imageEditor.isOpen && imageEditor.imageUrl && (
+        <ImageEditorModal
+          open={imageEditor.isOpen}
+          imageUrl={imageEditor.imageUrl}
+          nodeId={imageEditor.nodeId || ''}
+          onClose={closeImageEditor}
+          onSave={handleEditorSave}
         />
       )}
     </div>

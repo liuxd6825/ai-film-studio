@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import {
   CANVAS_NODE_TYPES,
+  CANVAS_CONTAINER_TYPES,
   DEFAULT_ASPECT_RATIO,
   DEFAULT_NODE_WIDTH,
   EXPORT_RESULT_NODE_DEFAULT_WIDTH,
@@ -23,6 +24,7 @@ import {
   type CanvasNode,
   type CanvasNodeData,
   type CanvasNodeType,
+  type ContainerNodeData,
   type ExportImageNodeResultKind,
   type Keyframe,
   type StoryboardExportOptions,
@@ -114,6 +116,11 @@ interface CanvasState {
     videoUrl: string | null;
     duration: number;
   };
+  imageEditor: {
+    isOpen: boolean;
+    imageUrl: string | null;
+    nodeId: string | null;
+  };
 
   setProjectId: (projectId: string | null) => void;
   setCanvasName: (name: string | null) => void;
@@ -195,6 +202,9 @@ interface CanvasState {
   deleteNodes: (nodeIds: string[]) => void;
   groupNodes: (nodeIds: string[]) => string | null;
   ungroupNode: (groupNodeId: string) => boolean;
+  addNodeToContainer: (nodeId: string, containerId: string) => void;
+  removeNodeFromContainer: (nodeId: string, containerId: string) => void;
+  toggleContainerCollapse: (containerId: string) => void;
   deleteEdge: (edgeId: string) => void;
   updateEdgeIndex: (edgeId: string, newIndex: number) => void;
   setSelectedNode: (nodeId: string | null) => void;
@@ -205,6 +215,8 @@ interface CanvasState {
   closeTextNodeOrderModal: () => void;
   openKeyframeModal: (nodeId: string, videoUrl: string, duration: number) => void;
   closeKeyframeModal: () => void;
+  openImageEditor: (nodeId: string, imageUrl: string) => void;
+  closeImageEditor: () => void;
   setViewportState: (viewport: Viewport) => void;
   setCanvasViewportSize: (size: { width: number; height: number }) => void;
   openImageViewer: (imageUrl: string, imageList?: string[]) => void;
@@ -527,6 +539,14 @@ function resolveAbsolutePosition(
   return { x, y };
 }
 
+function isContainerNodeType(type: CanvasNodeType): boolean {
+  return (
+    type === CANVAS_CONTAINER_TYPES.character ||
+    type === CANVAS_CONTAINER_TYPES.scene ||
+    type === CANVAS_CONTAINER_TYPES.prop
+  );
+}
+
 function pushSnapshot(
   snapshots: CanvasHistorySnapshot[],
   snapshot: CanvasHistorySnapshot,
@@ -665,6 +685,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     nodeId: null,
     videoUrl: null,
     duration: 5,
+  },
+  imageEditor: {
+    isOpen: false,
+    imageUrl: null,
+    nodeId: null,
   },
 
   setProjectId: (projectId) => {
@@ -1837,6 +1862,136 @@ addEdge: (source, target, index) => {
     return true;
   },
 
+  addNodeToContainer: (nodeId, containerId) => {
+    const state = get();
+    const container = state.nodes.find((n) => n.id === containerId);
+    const targetNode = state.nodes.find((n) => n.id === nodeId);
+
+    if (!container || !targetNode) {
+      return;
+    }
+
+    if (!isContainerNodeType(container.type)) {
+      return;
+    }
+
+    const containerData = container.data as ContainerNodeData;
+    if (containerData.childNodeIds.includes(nodeId)) {
+      return;
+    }
+
+    const nodeMap = new Map(
+      state.nodes.map((node) => [node.id, node] as const),
+    );
+
+    const updatedContainer = {
+      ...container,
+      data: {
+        ...container.data,
+        childNodeIds: [...containerData.childNodeIds, nodeId],
+      },
+    };
+
+    const absolute = resolveAbsolutePosition(targetNode, nodeMap);
+    const updatedNode: CanvasNode = {
+      ...targetNode,
+      parentId: containerId,
+      extent: "parent",
+      position: {
+        x: absolute.x - container.position.x + 10,
+        y: absolute.y - container.position.y + 40,
+      },
+    };
+
+    set({
+      nodes: state.nodes.map((n) =>
+        n.id === containerId ? updatedContainer : n.id === nodeId ? updatedNode : n,
+      ),
+      history: {
+        past: pushSnapshot(
+          state.history.past,
+          createSnapshot(state.nodes, state.edges),
+        ),
+        future: [],
+      },
+      dragHistorySnapshot: null,
+    });
+  },
+
+  removeNodeFromContainer: (nodeId, containerId) => {
+    const state = get();
+    const container = state.nodes.find((n) => n.id === containerId);
+    const targetNode = state.nodes.find((n) => n.id === nodeId);
+
+    if (!container || !targetNode) {
+      return;
+    }
+
+    if (!isContainerNodeType(container.type)) {
+      return;
+    }
+
+    const containerData = container.data as ContainerNodeData;
+    if (!containerData.childNodeIds.includes(nodeId)) {
+      return;
+    }
+
+    const nodeMap = new Map(
+      state.nodes.map((node) => [node.id, node] as const),
+    );
+
+    const updatedContainer = {
+      ...container,
+      data: {
+        ...container.data,
+        childNodeIds: containerData.childNodeIds.filter((id) => id !== nodeId),
+      },
+    };
+
+    const absolute = resolveAbsolutePosition(targetNode, nodeMap);
+    const updatedNode: CanvasNode = {
+      ...targetNode,
+      parentId: undefined,
+      extent: undefined,
+      position: {
+        x: absolute.x,
+        y: absolute.y,
+      },
+    };
+
+    set({
+      nodes: state.nodes.map((n) =>
+        n.id === containerId ? updatedContainer : n.id === nodeId ? updatedNode : n,
+      ),
+      history: {
+        past: pushSnapshot(
+          state.history.past,
+          createSnapshot(state.nodes, state.edges),
+        ),
+        future: [],
+      },
+      dragHistorySnapshot: null,
+    });
+  },
+
+  toggleContainerCollapse: (containerId) => {
+    const state = get();
+    const container = state.nodes.find((n) => n.id === containerId);
+
+    if (!container || !isContainerNodeType(container.type)) {
+      return;
+    }
+
+    const containerData = container.data as ContainerNodeData;
+    set({
+      nodes: state.nodes.map((n) =>
+        n.id === containerId
+          ? { ...n, data: { ...n.data, collapsed: !containerData.collapsed } }
+          : n,
+      ),
+    });
+  },
+
   deleteEdge: (edgeId) => {
     set((state) => {
       const hasEdge = state.edges.some((edge) => edge.id === edgeId);
@@ -1914,6 +2069,26 @@ addEdge: (source, target, index) => {
         nodeId: null,
         videoUrl: null,
         duration: 5,
+      },
+    });
+  },
+
+  openImageEditor: (nodeId, imageUrl) => {
+    set({
+      imageEditor: {
+        isOpen: true,
+        imageUrl,
+        nodeId,
+      },
+    });
+  },
+
+  closeImageEditor: () => {
+    set({
+      imageEditor: {
+        isOpen: false,
+        imageUrl: null,
+        nodeId: null,
       },
     });
   },

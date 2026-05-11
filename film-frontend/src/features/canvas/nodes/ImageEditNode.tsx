@@ -1,7 +1,7 @@
 import { memo, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { Eye, X, Download, Trash2, Image, Upload, RefreshCw } from "lucide-react";
+import { Eye, X, Download, Trash2, Image, Upload, RefreshCw, Edit3 } from "lucide-react";
 import { ImageSettingCard } from "../components/ImageSettingCard";
 import { useCanvasStore } from "../stores/canvasStore";
 import { imageApi, type ImageAiModel, type PromptType } from "../../../api/imageApi";
@@ -60,6 +60,7 @@ export const ImageEditNode = memo(function ImageEditNode({
   const openImageViewer = useCanvasStore((s) => s.openImageViewer);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
   const openTextNodeOrderModal = useCanvasStore((s) => s.openTextNodeOrderModal);
+  const openImageEditor = useCanvasStore((s) => s.openImageEditor);
 
   const [showFloatingPanel, setShowFloatingPanel] = useState(false);
   const [showImageSelector, setShowImageSelector] = useState(false);
@@ -76,6 +77,7 @@ export const ImageEditNode = memo(function ImageEditNode({
 
   const [isUploading, setIsUploading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputRefForPrompt = useRef<HTMLInputElement>(null);
 
@@ -787,6 +789,18 @@ const handleFile = useCallback(
           type="button"
           onClick={(e) => {
             e.stopPropagation();
+            openImageEditor(id, data.imageUrl || '');
+          }}
+          disabled={!data.imageUrl || isGenerating}
+          className={`p-1.5 rounded ${data.imageUrl && !isGenerating ? "hover:bg-gray-100 dark:hover:bg-gray-700" : "opacity-40 cursor-not-allowed"}`}
+          title="编辑"
+        >
+          <Edit3 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
             handleDelete();
           }}
           disabled={isGenerating}
@@ -942,7 +956,12 @@ const handleFile = useCallback(
               {incomingImages.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {incomingImages.map((img, index) => (
-                    <div key={`${img.id}-${index}`} className="relative group">
+                    <div
+                      key={`${img.id}-${index}`}
+                      className="relative"
+                      onMouseEnter={() => setHoveredImageId(img.id)}
+                      onMouseLeave={() => setHoveredImageId(null)}
+                    >
                       <img
                         src={img.previewImageUrl || img.imageUrl}
                         alt={img.label}
@@ -955,7 +974,8 @@ const handleFile = useCallback(
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(img.id)}
-                        className="absolute -top-1 -left-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                        className="absolute -top-1 -left-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center transition-opacity z-20"
+                        style={{ opacity: hoveredImageId === img.id ? 1 : 0 }}
                         title="断开连接"
                       >
                         ×
