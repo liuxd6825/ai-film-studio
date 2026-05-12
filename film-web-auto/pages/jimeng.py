@@ -75,7 +75,7 @@ class JimengPage(BasePage):
         return ""
 
     async def mode_control_found(self) -> bool:
-        mode_select = self.page.get_by_role("combobox").filter(has_text="Agent 模式").first
+        mode_select = self.page.get_by_role("combobox").filter(has_text="视频生成").first
         flag = 0
         while True:
             if await mode_select.count() > 0:
