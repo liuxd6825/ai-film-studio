@@ -499,6 +499,8 @@ class ApiService:
         return Result(data={"result_id": request_id, "result": "生成中", "result_url": self._build_result_url(request_id)})
 
     async def remove_gemini_chat(self, req) -> Result:
+        if not req.reserved_quantity and not req.reserved_time_length:
+            return Result(code=400, success=False, message="至少需要传递一个参数：reserved_quantity 或 reserved_time_length")
         asyncio.create_task(GeminiRemoveChat.remove_chats(
             reserved_quantity=req.reserved_quantity,
             reserved_time_length=req.reserved_time_length
