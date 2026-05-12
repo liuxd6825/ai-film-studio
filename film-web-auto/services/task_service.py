@@ -20,6 +20,8 @@ class TaskService:
             request_data = {"status": task.status}
             if task.desc is not None:
                 request_data["desc"] = task.desc
+            if task.system == "gemini" and task.workspace is not None:
+                request_data["workspace"] = task.workspace
             await client_request_service.update_client_request(task.request_id, request_data)
 
         return task

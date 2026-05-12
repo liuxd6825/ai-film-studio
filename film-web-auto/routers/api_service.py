@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.jimeng.video import VideoGenerationService
 from services.jimeng.image import ImageGenerationService
 from services.gemini.image import ImageGenerationService as GeminiImageGenerationService
+from services.gemini.remove_chat import GeminiRemoveChat
 from services.client_request_service import ClientRequestService
 from services.task_service import TaskService
 from database.connection import AsyncSessionLocal
@@ -496,6 +497,13 @@ class ApiService:
 
         asyncio.create_task(background_generate())
         return Result(data={"result_id": request_id, "result": "生成中", "result_url": self._build_result_url(request_id)})
+
+    async def remove_gemini_chat(self, req) -> Result:
+        asyncio.create_task(GeminiRemoveChat.remove_chats(
+            reserved_quantity=req.reserved_quantity,
+            reserved_time_length=req.reserved_time_length
+        ))
+        return Result(code=200, success=True, message="删除任务已提交")
 
 
     async def get_request(self, session: AsyncSession, request_id: str)-> Result:

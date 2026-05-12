@@ -39,3 +39,8 @@ class GeminiImageGenerateRequest(BaseModel):
 
 class GeminiImageGenerateBatchRequest(BaseModel):
     requests: list[GeminiImageGenerateRequest]
+
+
+class GeminiChatRemoveRequest(BaseModel):
+    reserved_quantity: Optional[int] = None
+    reserved_time_length: Optional[int] = None

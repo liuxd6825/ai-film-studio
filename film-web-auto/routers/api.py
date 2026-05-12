@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from schemas.request import VideoGenerateRequest, ImageGenerateRequest, VideoGenerateBatchRequest, ImageGenerateBatchRequest, GeminiImageGenerateRequest, GeminiImageGenerateBatchRequest
+from schemas.request import VideoGenerateRequest, ImageGenerateRequest, VideoGenerateBatchRequest, ImageGenerateBatchRequest, GeminiImageGenerateRequest, GeminiImageGenerateBatchRequest, GeminiChatRemoveRequest
 from database.connection import get_db
 from routers.api_service import api_service
 
@@ -35,6 +35,10 @@ async def generate_gemini_image(req: GeminiImageGenerateRequest, session: AsyncS
     result = await api_service.generate_gemini_image(session, req)
     return JSONResponse(content=result.model_dump())
 
+@router.delete("/gemini/chat/remove")
+async def remove_gemini_chat(req: GeminiChatRemoveRequest):
+    result = await api_service.remove_gemini_chat(req)
+    return JSONResponse(content=result.model_dump())
 
 # @router.post("/gemini/image/generates")
 # async def generate_gemini_images(req: GeminiImageGenerateBatchRequest, session: AsyncSession = Depends(get_db)):

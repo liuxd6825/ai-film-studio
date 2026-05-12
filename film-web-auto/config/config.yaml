@@ -24,7 +24,7 @@ storage:
 
 database:
   # url: "postgresql+asyncpg://postgres:123456@192.168.120.224:5432/jimeng"
-  url: "postgresql+asyncpg://postgres:secret@127.0.0.1:5432/jimeng"
+  url: "postgresql+asyncpg://postgres:123456@127.0.0.1:5432/jimeng"
   pool_size: 10
   max_overflow: 20
 
@@ -33,3 +33,9 @@ scanner:
   interval: 60
   wait_time: 10
   retry_limit: 3
+
+gemini_chat_remove_scanner:
+  enabled: false
+  interval: 60
+  reserved_quantity: 50
+  reserved_time_length: 1440

@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     SCANNER_WAIT_TIME: int = 10
     SCANNER_RETRY_LIMIT: int = 3
     SCANNER_ENABLED: bool = True
+    GEMINI_CHAT_REMOVE_SCANNER_INTERVAL: int = 60
+    GEMINI_CHAT_REMOVE_SCANNER_ENABLED: bool = True
+    GEMINI_CHAT_REMOVE_SCANNER_RESERVED_QUANTITY: int = 50
+    GEMINI_CHAT_REMOVE_SCANNER_RESERVED_TIME_LENGTH: int = 1440
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -95,5 +99,15 @@ class Settings(BaseSettings):
             self.SCANNER_WAIT_TIME = scanner_config["wait_time"]
         if scanner_config.get("retry_limit"):
             self.SCANNER_RETRY_LIMIT = scanner_config["retry_limit"]
+
+        gemini_chat_remove_scanner_config = config.get("gemini_chat_remove_scanner", {})
+        if gemini_chat_remove_scanner_config.get("enabled") is not None:
+            self.GEMINI_CHAT_REMOVE_SCANNER_ENABLED = gemini_chat_remove_scanner_config["enabled"]
+        if gemini_chat_remove_scanner_config.get("interval"):
+            self.GEMINI_CHAT_REMOVE_SCANNER_INTERVAL = gemini_chat_remove_scanner_config["interval"]
+        if gemini_chat_remove_scanner_config.get("reserved_quantity"):
+            self.GEMINI_CHAT_REMOVE_SCANNER_RESERVED_QUANTITY = gemini_chat_remove_scanner_config["reserved_quantity"]
+        if gemini_chat_remove_scanner_config.get("reserved_time_length"):
+            self.GEMINI_CHAT_REMOVE_SCANNER_RESERVED_TIME_LENGTH = gemini_chat_remove_scanner_config["reserved_time_length"]
 
 settings = Settings()

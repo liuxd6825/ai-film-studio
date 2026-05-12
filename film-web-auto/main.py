@@ -10,6 +10,7 @@ from core.config import settings
 from utils.image import cleanup_old_images
 from database.connection import init_db
 from schedule.scanner import scanner_service
+from schedule.gemini_chat_remove_scanner import gemini_chat_remove_scanner_service
 
 
 async def cleanup_task():
@@ -26,16 +27,25 @@ async def lifespan(app: FastAPI):
     print("[Main] 启动清理任务...")
     cleanup_task_handle = asyncio.create_task(cleanup_task())
     scanner_task_handle = None
+    gemini_chat_remove_scanner_task_handle = None
     if settings.SCANNER_ENABLED:
         print("[Main] 启动扫描任务...")
         scanner_task_handle = asyncio.create_task(scanner_service.start())
         print("[Main] 扫描任务已启动")
     else:
         print("[Main] 扫描任务已禁用")
+    if settings.GEMINI_CHAT_REMOVE_SCANNER_ENABLED:
+        print("[Main] 启动Gemini聊天清理扫描任务...")
+        gemini_chat_remove_scanner_task_handle = asyncio.create_task(gemini_chat_remove_scanner_service.start())
+        print("[Main] Gemini聊天清理扫描任务已启动")
+    else:
+        print("[Main] Gemini聊天清理扫描任务已禁用")
     yield
     cleanup_task_handle.cancel()
     if scanner_task_handle:
         scanner_task_handle.cancel()
+    if gemini_chat_remove_scanner_task_handle:
+        gemini_chat_remove_scanner_task_handle.cancel()
     await browser_manager.stop()
     print("[Main] 浏览器已关闭")
 
